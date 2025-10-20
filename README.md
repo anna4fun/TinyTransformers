@@ -5,7 +5,7 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
 
 My timeline:
 1. 2025/10/13 - 2025/10/17: Video watching
-2. 2025/10/18: Load the data, implemented a toy example of weight matrix aggregation [code](weight_matrix_toy_example.py). 
+2. 2025/10/18: Load the data, implemented a toy example of weight matrix aggregation [code](code/weight_matrix_toy_example.py). 
 And suddenly realized I need to add the `C (Channel)` dimension to the X.
-I tried One-Hot-Encoding first because it's quickly, and then realized it doesn't make sense at all, and I really should use an embedding, here's [the notes about why](where_shall_do_embedding.md)
-3. 2025/10/19: Semi-copied the bigram model from the original repos' `bigram.py` file, get interested in what exactly does `nn.Embedding` means and have a bunch of Q&A with ChatGPT, here's the [notes about what does embedding do for training a Bigram model](Is_the_embedding_table_the_training_target_for_BigramModel.md)
+I tried One-Hot-Encoding first because it's quickly, and then realized it doesn't make sense at all, and I really should use an embedding, here's [the notes about why](notes/where_shall_do_embedding.md)
+3. 2025/10/19: Semi-copied the bigram model from the original repos' `bigram.py` file, get interested in what exactly does `nn.Embedding` means and have a bunch of Q&A with ChatGPT, here's the [notes about what does embedding do for training a Bigram model](notes/Is_the_embedding_table_the_training_target_for_BigramModel.md)
