@@ -15,9 +15,9 @@ logits = [2.0, 0.5, -1.0]         # three tokens in vocab
 
 Apply softmax to turn these into probabilities:
 
-[
-p_j = \frac{e^{\text{logit}_j}}{\sum_k e^{\text{logit}_k}}
-]
+
+$$ p_j = \frac{e^{\text{logit}_j}}{\sum_k e^{\text{logit}_k}} $$
+
 
 Say that gives:
 
@@ -37,15 +37,13 @@ target = [1, 0, 0]
 
 The **cross-entropy** between target `q` and predicted `p` is
 
-[
-H(q,p) = -\sum_j q_j \log p_j
-]
+
+$$ H(q,p) = -\sum_j q_j \log p_j $$
+
 
 For a one-hot target (the true token is `j*`):
 
-[
-H(q,p) = -\log p_{j*}
-]
+$$ H(q,p) = -\log p_{j*} $$
 
 So for our example:
 
@@ -59,11 +57,11 @@ That’s the **negative log-likelihood** of the correct token.
 
 ## ⚙️ 3️⃣ Why the **negative** sign?
 
-Because we want to **maximize** the likelihood (p_{j*}) of the correct token,
+Because we want to **maximize** the likelihood $(p_{j*})$ of the correct token,
 but optimizers *minimize* losses.
 
-* Maximum-likelihood estimation: maximize ( \log p_{j*} )
-* Cross-entropy loss: minimize ( -\log p_{j*} )
+* Maximum-likelihood estimation: maximize $ ( \log p_{j*} ) $
+* Cross-entropy loss: minimize $ ( -\log p_{j*} ) $
 
 So the negative sign simply flips a maximization into a minimization problem that gradient descent can handle.
 
@@ -72,9 +70,7 @@ So the negative sign simply flips a maximization into a minimization problem tha
 ## 🧩 4️⃣ Why not “probability of making the wrong prediction”?
 
 You could in theory write
-[
-1 - p_{j*}
-]
+$$ 1 - p_{j*} $$
 and try to minimize that, but that function is **flat** near 1 and **non-smooth** near 0 — bad for learning.
 
 The log brings two crucial benefits:
@@ -103,9 +99,7 @@ That steep slope near small (p) is what drives learning fast when predictions ar
 
 For a batch of B×T tokens:
 
-[
-\text{Loss} = -\frac{1}{BT}\sum_{b,t} \log p_{\theta}(x_{b,t}^{\text{true}} \mid \text{context})
-]
+$$ \text{Loss} = -\frac{1}{BT}\sum_{b,t} \log p_{\theta}(x_{b,t}^{\text{true}} \mid \text{context}) $$
 
 This is exactly the **negative average log-likelihood**, i.e. **cross-entropy loss**.
 

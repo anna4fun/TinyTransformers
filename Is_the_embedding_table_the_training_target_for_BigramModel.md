@@ -433,3 +433,105 @@ If `diff` is small, the learned bigram table has “stabilized” to the true da
 
 Once those are true, the bigram model has converged — it’s learned all it can from the 1-token context.
 
+# Best Practices for Initializations for Bigram and Transformers
+Great question. Short, practical answer:
+
+## Bigram model (V × V logits table)
+
+* **What it represents:** each row *i* is the logits for (P(\text{next}=j \mid \text{current}=i)).
+* **Good inits:**
+
+  1. **Zeros (uniform start):**
+
+     ```python
+     nn.init.zeros_(model.token_embedding_table.weight)  # softmax → uniform per row
+     ```
+
+     Works fine—training quickly breaks symmetry because rows see different tokens.
+  2. **Small normal:**
+
+     ```python
+     nn.init.normal_(model.token_embedding_table.weight, mean=0.0, std=0.01)
+     ```
+  3. **Best warm-start (if you want fastest convergence):** initialize from **empirical bigram** counts (Laplace-smoothed), then take log:
+
+     ```python
+     counts = torch.ones(V, V)  # +1 Laplace
+     for a, b in zip(data[:-1], data[1:]): counts[a, b] += 1
+     probs = counts / counts.sum(1, keepdim=True)
+     with torch.no_grad():
+         model.token_embedding_table.weight.copy_(probs.log())
+     ```
+
+     You still train with cross-entropy; this just gives you a head start.
+
+## Transformer (token/pos embeddings + QKV/linear layers)
+
+Common, time-tested defaults (GPT/BERT-style):
+
+* **Token & positional embeddings (`nn.Embedding`)**
+
+  ```python
+  def init_embeddings(m):
+      if isinstance(m, nn.Embedding):
+          nn.init.normal_(m.weight, mean=0.0, std=0.02)  # classic GPT/BERT std
+  ```
+
+  And (optional but standard): **scale token embeddings** before adding positions:
+
+  ```python
+  x = token_emb(idx) * math.sqrt(n_embd) + pos_emb(pos_idx)
+  ```
+
+* **Linear layers (Q, K, V, output projections, MLPs)**
+
+  ```python
+  def init_linears(m):
+      if isinstance(m, nn.Linear):
+          nn.init.xavier_uniform_(m.weight)          # great general default
+          if m.bias is not None:
+              nn.init.zeros_(m.bias)
+  ```
+
+* **LayerNorm**
+
+  ```python
+  def init_layernorm(m):
+      if isinstance(m, nn.LayerNorm):
+          nn.init.ones_(m.weight)
+          nn.init.zeros_(m.bias)
+  ```
+
+* **Weight tying (language modeling)**
+  Tie the output softmax weight to the token embedding weight (saves params, helps perplexity):
+
+  ```python
+  model.lm_head.weight = model.token_emb.weight
+  ```
+
+* **Advanced (optional) deep-stability tricks**
+
+  * **Scaled init for residual projections:** some GPT variants scale certain output weights by (1/\sqrt{2N}) (N = # of residual blocks) or **zero-init** the final projection in attention/MLP blocks to stabilize very deep stacks. Useful for 24+ layers; not needed for tiny models.
+  * Use **fp32** for embeddings on MPS/CUDA unless you’re doing mixed precision.
+
+## One-stop init hook
+
+Apply all at once:
+
+```python
+def init_transformer_params(model):
+    for m in model.modules():
+        if isinstance(m, nn.Embedding):
+            nn.init.normal_(m.weight, mean=0.0, std=0.02)
+        elif isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.ones_(m.weight); nn.init.zeros_(m.bias)
+```
+
+## TL;DR
+
+* **Bigram:** zeros or small normal are fine; **empirical bigram log-probs** is the best warm start.
+* **Transformer:** `Embedding ~ N(0, 0.02)`, `Linear → Xavier`, `LayerNorm (1,0)`, optionally scale embeddings by `√d_model`, and tie `lm_head` to token embeddings.
