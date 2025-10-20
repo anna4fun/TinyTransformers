@@ -43,8 +43,6 @@ vocab_size = len(chars) # 65
 # create a mapping between chars and integers
 char2int = {ch:i for i, ch in enumerate(chars)}
 int2char = {i:ch for i, ch in enumerate(chars)}
-char2int['?'] # 12
-int2char[25] # 'M'
 
 # encoder: a function that turns text into a list of integers using the char2int mapping
 def encoder(sentence: str):
@@ -81,10 +79,11 @@ val_data = data[n:]
 
 # data loading, split into batches
 # todo: change to DataLoader object
-def get_batch(ds):
+def get_batch(split):
     # ds for dataset, can be train_data or val_data
     # x : [i:i+block_size-1]; y[i+1, i+block_size], no need to exp pass block_size
     # randomly draw batch_size amount of i
+    ds = train_data if split == 'train' else val_data
     starting_index = torch.randperm(len(ds)-block_size-1)[:batch_size]
     x = torch.stack([ds[i:i+block_size] for i in starting_index])     # torch.Size([64, 256])
     y = torch.stack([ds[i+1:i+block_size+1] for i in starting_index]) # torch.Size([64, 256])
@@ -156,31 +155,6 @@ class BigramLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
 
-model = BigramLanguageModel(vocab_size)
-m = model.to(device)
-
-# create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-
-for iter in range(max_iters):
-
-    # every once in a while evaluate the loss on train and val sets
-    if iter % eval_interval == 0:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-
-    # sample a batch of data
-    xb, yb = get_batch('train')
-
-    # evaluate the loss
-    logits, loss = model(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
-
-# generate from the model
-context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decoder(m.generate(context, max_new_tokens=500)[0].tolist()))
 
 
 
