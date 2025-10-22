@@ -5,7 +5,7 @@ import torch
 # frozen=True: prevents accidental mutation
 @dataclass(frozen=True)
 class DataConfig:
-    text_path: str
+    text_path: str = "lecture_code_and_data/input.txt"
     block_size: int = 128
     batch_size: int = 64
     val_frac: float = 0.01

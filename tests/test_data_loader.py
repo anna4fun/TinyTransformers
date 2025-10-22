@@ -3,7 +3,7 @@ from data_loader import make_dataloaders, decode
 import torch
 
 def test_make_dataloaders():
-    cfg = DataConfig(text_path="lecture_code_and_data/input.txt", block_size=15, batch_size=8, val_frac=0.01)
+    cfg = DataConfig(block_size=15, batch_size=8, val_frac=0.01, seed=42, shuffle=True)
     torch.manual_seed(cfg.seed)
     bundle = make_dataloaders(cfg)
     assert bundle["vocab_size"] == 65

@@ -16,7 +16,7 @@ def evaluate(model, val_loader, device):
     for xb, yb in val_loader:
         xb = xb.to(device)
         yb = yb.to(device)
-        logits, loss = model(idx=xb, targets=yb)                       # (B, T, V)
+        logits, loss = model(idx=xb, targets=yb)
         bs = xb.size(0)
         total += loss.item() * bs
         denom += bs
@@ -26,7 +26,6 @@ def evaluate(model, val_loader, device):
 def main():
     # ---------------- Config ----------------
     cfg = DataConfig(
-            text_path="lecture_code_and_data/input.txt",
             block_size=20, batch_size=64, val_frac=0.01,
             seed=42, num_workers=0, shuffle=True, drop_last=True
         )
@@ -73,7 +72,7 @@ def main():
             it += 1
             if it % log_every == 0 or it == 1:
                 val_loss = evaluate(model, val_loader, device)
-                ppl = math.exp(val_loss) if val_loss < 20 else float("inf")
+                ppl = math.exp(val_loss) if val_loss < 20 else float("inf") # todo: what's ppl?
                 print(f"it={it:5d}/{steps}  train_loss={loss.item():.4f}  val_loss={val_loss:.4f}  ppl={ppl:.2f}")
 
                 if val_loss < best_val:
