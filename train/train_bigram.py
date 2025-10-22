@@ -83,24 +83,12 @@ def main():
                         "vocab_size": C,
                         "block_size": T,
                         "cfg": cfg.__dict__,
-                    }, "ckpt_bigram.pt")
+                    }, "checkpoints/ckpt_simple_bigram.pt")
 
             if it >= steps:
                 break
 
     print(f"Done in {time.time() - t0:.1f}s. Best val_loss={best_val:.4f}")
 
-    # TODO: generate after training finished
-    # generate from the model
-    context = torch.zeros((1, 1), dtype=torch.long, device=device)
-    print(decode(model.generate(context, max_new_tokens=500)[0].tolist(), bundle["itos"]))
-
 if __name__ == "__main__":
     main()
-
-
-
-
-# # generate from the model
-# context = torch.zeros((1, 1), dtype=torch.long, device=device)
-# print(decoder(m.generate(context, max_new_tokens=500)[0].tolist()))
