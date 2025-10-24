@@ -4,21 +4,31 @@ from data_loader import make_dataloaders
 from self_attention_head import SelfAttentionHead
 from gpt import GPTLanguageModel
 
-def test_self_attention():
-    data_config = DataConfig(block_size=15, batch_size=8, val_frac=0.01, seed=42, shuffle=True)
-    bundle = make_dataloaders(data_config)
-    vocab_size = bundle["vocab_size"]
-    model_config = ModelConfig(vocab_size=vocab_size, n_embd=10)
-    # first load the GPT main model, we need it for the embedding
-    model = GPTLanguageModel(model_config, data_config)
-    xb, yb = next(iter(bundle["train_loader"]))
-    te, pe = model.token_position_embedding(xb, model_config)
-    x = te + pe # x is token + position embedded xb
-    hs = 10
-    att_init = SelfAttentionHead(model_config, data_config, head_size=hs)
-    k,q, attention, scale = att_init.attention(x)
-    print(scale)
-    assert x.shape == (data_config.batch_size, data_config.block_size, model_config.n_embd)
-    assert k.shape == (data_config.batch_size, data_config.block_size, hs)
-    assert q.shape == (data_config.batch_size, data_config.block_size, hs)
-    assert attention.shape == (data_config.batch_size, data_config.block_size, data_config.block_size)
+def test_self_attention(self_attention_head_setup):
+    s = self_attention_head_setup
+    att_init = SelfAttentionHead(s.model_config, s.data_config, head_size=s.hs)
+    k,q, attention, scale = att_init.attention(s.x)
+    assert round(scale, 4) == 0.3162
+    assert s.x.shape == (s.data_config.batch_size, s.data_config.block_size, s.model_config.n_embd)
+    assert k.shape == (s.data_config.batch_size, s.data_config.block_size, s.hs)
+    assert q.shape == (s.data_config.batch_size, s.data_config.block_size, s.hs)
+    assert attention.shape == (s.data_config.batch_size, s.data_config.block_size, s.data_config.block_size)
+    assert k.shape[-1] == s.hs
+
+def test_self_attention_decoder(self_attention_head_setup):
+    s = self_attention_head_setup
+    att_init = SelfAttentionHead(s.model_config, s.data_config, head_size=s.hs)
+    weight = att_init.decoder(s.x)
+    # dimension should be (B,T,T)
+    assert weight.shape == (s.data_config.batch_size, s.data_config.block_size,  s.data_config.block_size)
+    # every batch is a TxT lower triangle, each row sum to 1, there should be Tx(T+1)/2 non-zero entries in each batch
+    assert weight[0][3].sum().item() == 1
+    assert torch.count_nonzero(weight[-1]) == s.data_config.block_size*(s.data_config.block_size+1)/2
+    print(weight[0].sum(dim=1))
+
+def test_self_attention_forward(self_attention_head_setup):
+    s = self_attention_head_setup
+    att_init = SelfAttentionHead(s.model_config, s.data_config, head_size=s.hs)
+    output = att_init.forward(s.x)
+    assert output.shape == (s.data_config.batch_size, s.data_config.block_size, s.hs)
+    print(output[0])

@@ -28,20 +28,41 @@ class SelfAttentionHead(nn.Module):
         self.Wv = nn.Linear(in_features = config.n_embd, out_features = head_size, bias=False)
         # These 3 weights are shared across all tokens and batches — learned during training
         # The Transformer’s power comes from the fact that the same Wq, Wk, Wv are applied to every token, allowing generalization to variable-length sequences.
+        # The lower triangle mask for the decoder block that only allows tokens to look back not forward
         self.register_buffer('tril', torch.tril(torch.ones(data_config.block_size, data_config.block_size))) # (T,T) lower triangle
 
     def attention(self, x):
+        # aka, affiliations among tokens within each sequence, no cross sequence or cross batch communications
+        # The attention calculate the affinity between token's query and other token's public information
+        # affinity's calculation is cosine similarity, the dot product of q and k.
         # x should be (B,T, n_embd), which includes token embedding and positional embedding
         k = self.Wk(x)  # k = x @ Wk, (B,T, hs) ; hs = head_size
-        q = self.Wq(x)  # q = x @ Wq, (B,T, hs)
+        q = self.Wq(x)  # q = x @ Wq,  (B,T, hs)
         attention = q @ k.transpose(-2, -1) # * k.shape[-1] ** -0.5  # (B,T,T)
-        scale_param = k.shape[-1] ** -0.5
-        return k, q, attention, scale_param
+        # dₖ = key/query embedding dimension (head size)
+        dk = k.shape[-1] ** -0.5
+        return k, q, attention, dk
+
+    def decoder(self, x):
+        # x should be (B,T, n_embd)
+        k, q, attention, scale = self.attention(x)
+        # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1
+        # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
+        # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
+        attention = attention * scale
+        # Decoder
+        # apply the lower triangle mask
+        tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
+                                     float('-inf'))  # (B, T, T)
+        weight = F.softmax(tril, dim=-1) # (B, T, T)
+        return weight
 
     def forward(self, x):
         # x should be (B,T, n_embd)
-        v = self.Wv(x)  # v = x @Wv,  (B,T, hs)
-        k,q, attention, scale = self.attention(x)
-        attention = attention * scale
-
-
+        v = self.Wv(x) # (B,T,hs)
+        # TODO: what is dropout
+        # Get weights from decoder block
+        weight = self.decoder(x)
+        # Aggregates weights over v
+        out = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
+        return out

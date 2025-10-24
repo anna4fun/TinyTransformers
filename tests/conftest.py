@@ -4,6 +4,12 @@ import os
 import random
 import torch
 import pytest
+from dataclasses import dataclass
+
+from config import DataConfig, ModelConfig
+from data_loader import make_dataloaders
+from gpt import GPTLanguageModel
+
 
 # --- Global settings ---------------------------------------------------------
 
@@ -37,26 +43,40 @@ def bigram_config(vocab_size):
     return ModelConfig(vocab_size=vocab_size)
 
 # --- Model factories ---------------------------------------------------------
-
 @pytest.fixture
 def bigram(bigram_config):
     from simple_bigram import BigramLanguageModel
     return BigramLanguageModel(bigram_config)
 
-# Example: a tiny transformer with small dims so unit tests are fast.
-# @pytest.fixture
-# def tiny_transformer(vocab_size):
-#     from nlp_models.transformer import TransformerLM, TransformerConfig
-#     cfg = TransformerConfig(
-#         vocab_size=vocab_size,
-#         d_model=64,
-#         n_heads=2,
-#         n_layers=2,
-#         ff_mult=2,
-#         block_size=32,
-#         dropout=0.0,
-#     )
-#     return TransformerLM(cfg)
+
+@dataclass
+class SelfAttentionHeadTestSetup:
+    data_config: DataConfig
+    model_config: ModelConfig
+    model: GPTLanguageModel
+    x: torch.Tensor
+    hs: int
+# scope="module" makes the fixture run once per test file, not before every test → faster.
+# The returned dict can be reused the same setup values across tests.
+@pytest.fixture(scope="module")
+def self_attention_head_setup() -> SelfAttentionHeadTestSetup:
+    """Shared setup for testing SelfAttention subfunctions."""
+    data_config = DataConfig(block_size=15, batch_size=8, val_frac=0.01, seed=42, shuffle=True)
+    bundle = make_dataloaders(data_config)
+    vocab_size = bundle["vocab_size"]
+    model_config = ModelConfig(vocab_size=vocab_size, n_embd=10)
+    # first load the GPT main model, we need it for the embedding
+    model = GPTLanguageModel(model_config, data_config)
+    xb, yb = next(iter(bundle["train_loader"]))
+    te, pe = model.token_position_embedding(xb, model_config)
+    x = te + pe  # x is token + position embedded xb
+    return SelfAttentionHeadTestSetup(
+        data_config=data_config,
+        model_config=model_config,
+        model=model,
+        x=x,
+        hs=10
+    )
 
 # --- IO helpers --------------------------------------------------------------
 
