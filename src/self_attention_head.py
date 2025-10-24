@@ -5,6 +5,7 @@ from config import DataConfig, ModelConfig
 
 class SelfAttentionHead(nn.Module):
     """ This is the Scaled Dot-Product Attention """
+    """ It tell us: for each sequence in each batch, how is each token affiliated with each others"""
     def __init__(self, config: ModelConfig, data_config: DataConfig, head_size: int):
         super().__init__()
         self.config = config
@@ -31,6 +32,8 @@ class SelfAttentionHead(nn.Module):
         # The Transformer’s power comes from the fact that the same Wq, Wk, Wv are applied to every token, allowing generalization to variable-length sequences.
         # The lower triangle mask for the decoder block that only allows tokens to look back not forward
         self.register_buffer('tril', torch.tril(torch.ones(data_config.block_size, data_config.block_size))) # (T,T) lower triangle
+        # Drop out: randomly set part of each neural net layer's logits/activations to 0, to prevent NN rely on any one of the neurons too much
+        self.dropout = nn.Dropout(config.dropout)
 
     def attention(self, x):
         # aka, affiliations among tokens within each sequence, no cross sequence or cross batch communications
@@ -68,9 +71,11 @@ class SelfAttentionHead(nn.Module):
     def forward(self, x, decoder=True):
         # x should be (B,T, n_embd)
         v = self.Wv(x) # (B,T,hs)
-        # TODO: what is dropout
+        # Dropout is randomly mask x% of the logits/activations to be 0 at each batch/layer/forward pass
         # Get weights from decoder block
         weight = self.calc_weights(x, decoder=decoder)
+        # Dropout/Mask some weights to 0 to prevents overfitting
+        weight = self.dropout(weight)
         # Aggregates weights over v
         out = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
         return out
