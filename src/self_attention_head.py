@@ -4,6 +4,7 @@ from torch.nn import functional as F
 from config import DataConfig, ModelConfig
 
 class SelfAttentionHead(nn.Module):
+    """ This is the Scaled Dot-Product Attention """
     def __init__(self, config: ModelConfig, data_config: DataConfig, head_size: int):
         super().__init__()
         self.config = config
@@ -46,17 +47,33 @@ class SelfAttentionHead(nn.Module):
     def decoder(self, x):
         # x should be (B,T, n_embd)
         k, q, attention, scale = self.attention(x)
+        ## Scale
         # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1
         # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
         # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
         attention = attention * scale
         # Decoder
-        # apply the lower triangle mask
+        # apply the lower triangle mask, so each token can only look left
+        ## Mask
         tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
                                      float('-inf'))  # (B, T, T)
         weight = F.softmax(tril, dim=-1) # (B, T, T)
         return weight
 
+    def encoder(self, x):
+        # x should be (B,T, n_embd)
+        k, q, attention, scale = self.attention(x)
+        ## Scale
+        # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1
+        # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
+        # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
+        attention = attention * scale
+        # encoder, don't apply the lower triangular mask, let
+        weight = F.softmax(attention, dim=-1) # (B, T, T)
+        return weight
+
+    # Here's the Scaled Dot-Product Attention
+    # Refer to Figure.2 of the Attention is All You Need paper
     def forward(self, x):
         # x should be (B,T, n_embd)
         v = self.Wv(x) # (B,T,hs)
