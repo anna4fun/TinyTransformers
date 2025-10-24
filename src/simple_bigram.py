@@ -19,6 +19,7 @@ class BigramLanguageModel(nn.Module):
         # Question: is idx = input tokens (e.g. "a", "b")  or the indexes of the input tokens (eg. [1,2])
         # Answer: idx = xb, targets = yb; xb, yb are (B,T) tensors of integers
         # idx is the input data with dimension (B,T), B=batch_size, T=time step (number of tokens in one line)
+        B, T = idx.shape
         logits = self.embedding_table(idx)
         if targets is None:
             loss = None
