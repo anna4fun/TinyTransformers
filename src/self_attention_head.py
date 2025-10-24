@@ -44,7 +44,7 @@ class SelfAttentionHead(nn.Module):
         dk = k.shape[-1] ** -0.5
         return k, q, attention, dk
 
-    def decoder(self, x):
+    def calc_weights(self, x, decoder):
         # x should be (B,T, n_embd)
         k, q, attention, scale = self.attention(x)
         ## Scale
@@ -52,34 +52,25 @@ class SelfAttentionHead(nn.Module):
         # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
         # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
         attention = attention * scale
-        # Decoder
-        # apply the lower triangle mask, so each token can only look left
-        ## Mask
-        tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
-                                     float('-inf'))  # (B, T, T)
-        weight = F.softmax(tril, dim=-1) # (B, T, T)
-        return weight
-
-    def encoder(self, x):
-        # x should be (B,T, n_embd)
-        k, q, attention, scale = self.attention(x)
-        ## Scale
-        # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1
-        # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
-        # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
-        attention = attention * scale
-        # encoder, don't apply the lower triangular mask, let
-        weight = F.softmax(attention, dim=-1) # (B, T, T)
+        # decoder = True means we want each token to only look left
+        if decoder:
+            # Apply the lower triangle matrix as the mask
+            tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
+                                         float('-inf'))  # (B, T, T)
+            weight = F.softmax(tril, dim=-1) # (B, T, T)
+        # decoder = False means we allow each token to look both right and left
+        else:
+            weight = F.softmax(attention, dim=-1)
         return weight
 
     # Here's the Scaled Dot-Product Attention
     # Refer to Figure.2 of the Attention is All You Need paper
-    def forward(self, x):
+    def forward(self, x, decoder=True):
         # x should be (B,T, n_embd)
         v = self.Wv(x) # (B,T,hs)
         # TODO: what is dropout
         # Get weights from decoder block
-        weight = self.decoder(x)
+        weight = self.calc_weights(x, decoder=decoder)
         # Aggregates weights over v
         out = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
         return out

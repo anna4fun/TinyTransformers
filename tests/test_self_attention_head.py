@@ -1,3 +1,4 @@
+import pytest
 import torch
 from config import ModelConfig, DataConfig
 from data_loader import make_dataloaders
@@ -18,13 +19,24 @@ def test_self_attention(self_attention_head_setup):
 def test_self_attention_decoder(self_attention_head_setup):
     s = self_attention_head_setup
     att_init = SelfAttentionHead(s.model_config, s.data_config, head_size=s.hs)
-    weight = att_init.decoder(s.x)
+    weight = att_init.calc_weights(s.x, decoder=True)
     # dimension should be (B,T,T)
     assert weight.shape == (s.data_config.batch_size, s.data_config.block_size,  s.data_config.block_size)
     # every batch is a TxT lower triangle, each row sum to 1, there should be Tx(T+1)/2 non-zero entries in each batch
-    assert weight[0][3].sum().item() == 1
     assert torch.count_nonzero(weight[-1]) == s.data_config.block_size*(s.data_config.block_size+1)/2
-    print(weight[0].sum(dim=1))
+    # each row sum to 1, so the sum of weights should equal to T
+    # test with tolerance style 1: avoid error caused by float32: 14.999999 vs 15.
+    assert weight[0].sum().item() == pytest.approx(s.data_config.block_size, rel=0, abs=1e-6)
+
+def test_self_attention_encoder(self_attention_head_setup):
+    s = self_attention_head_setup
+    att_init = SelfAttentionHead(s.model_config, s.data_config, head_size=s.hs)
+    weight = att_init.calc_weights(s.x, decoder=False)
+    # dimension should be (B,T,T)
+    assert weight.shape == (s.data_config.batch_size, s.data_config.block_size,  s.data_config.block_size)
+    # each row sum to 1, so the sum of weights should equal to T
+    # test with tolerance style 2: avoid error caused by float32: 14.999999 vs 15.
+    assert torch.allclose(weight[0].sum(dim=1), torch.ones_like(weight[0].sum(dim=1)), atol=1e-6)
 
 def test_self_attention_forward(self_attention_head_setup):
     s = self_attention_head_setup
