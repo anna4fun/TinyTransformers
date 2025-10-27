@@ -21,6 +21,7 @@ class DataBundle(TypedDict):
 # -------------------------
 # Tokenization
 # -------------------------
+# The simplest tokenizer, every tokenizer contains the rule of how to break words and sentences, and a pair of encode and decode
 def build_tokenizers(text: str) -> Tuple[Dict[str,int], Dict[int,str]]:
     # NOTE: char-level; includes whitespace and punctuation by design
     chars = sorted(list(set(text)))

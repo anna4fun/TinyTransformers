@@ -1,12 +1,11 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-
 from config import ModelConfig, DataConfig
 from self_attention_head import SelfAttentionHead
 
 class MultiHeadAttention(torch.nn.Module):
     """ Multi-Head Attention module """
+    """ We are going to distribute the overall attention training into multiple heads and then combine together"""
     def __init__(self, config: ModelConfig, data_config: DataConfig, num_heads):
         super().__init__()
         self.config = config
@@ -23,5 +22,5 @@ class MultiHeadAttention(torch.nn.Module):
         attention_combo = torch.cat([h(x) for h in self.heads], dim=-1)
         # project (B,T, hs * num_heads) into (B,T,C)
         attention_combo  = self.proj(attention_combo)
-        out = self.dropout(attention_combo)
-        return out
+        out = self.dropout(attention_combo) #(B, T, C）
+        return attention_combo, out

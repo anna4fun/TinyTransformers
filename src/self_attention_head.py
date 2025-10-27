@@ -36,9 +36,9 @@ class SelfAttentionHead(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
 
     def attention(self, x):
-        # aka, affiliations among tokens within each sequence, no cross sequence or cross batch communications
+        # Attention: aka, affiliations among tokens within each sequence, no cross sequence or cross batch communications
         # The attention calculate the affinity between token's query and other token's public information
-        # affinity's calculation is cosine similarity, the dot product of q and k.
+        # affinity's calculation is (cosine) similarity, the dot product of q and k.
         # x should be (B,T, n_embd), which includes token embedding and positional embedding
         k = self.Wk(x)  # k = x @ Wk, (B,T, hs) ; hs = head_size
         q = self.Wq(x)  # q = x @ Wq,  (B,T, hs)
@@ -51,7 +51,7 @@ class SelfAttentionHead(nn.Module):
         # x should be (B,T, n_embd)
         k, q, attention, scale = self.attention(x)
         ## Scale
-        # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1
+        # reduce the variance of each (T,T) affinity score of the attention from scale=dk into 1 (underlying assumptions: every token of (T,T) has mean=0, var=1)
         # ensuring that for every sequence in every batch, the attention logits stay within a stable numerical range before softmax
         # this will prevent the following softmax to polarize to only 1 big affinity of 1 token "disperse"
         attention = attention * scale
@@ -70,12 +70,12 @@ class SelfAttentionHead(nn.Module):
     # Refer to Figure.2 of the Attention is All You Need paper
     def forward(self, x, decoder=True):
         # x should be (B,T, n_embd)
-        v = self.Wv(x) # (B,T,hs)
-        # Dropout is randomly mask x% of the logits/activations to be 0 at each batch/layer/forward pass
         # Get weights from decoder block
         weight = self.calc_weights(x, decoder=decoder)
         # Dropout/Mask some weights to 0 to prevents overfitting
+        # Dropout is randomly mask x% of the logits/activations to be 0 at each batch/layer/forward pass
         weight = self.dropout(weight)
         # Aggregates weights over v
+        v = self.Wv(x)  # (B,T,hs)
         out = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
         return out

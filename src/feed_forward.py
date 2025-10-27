@@ -15,4 +15,5 @@ class FeedFoward(nn.Module):
         )
 
     def forward(self, x):
+        # todo: is the input x = output of the multihead attention? (bc L1's input dim = n_embd)
         return self.net(x)

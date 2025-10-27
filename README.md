@@ -4,3 +4,8 @@ following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in cod
 This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture)
 
 I plan to integrate MLFlow into this repo for experiment instrumentation.
+
+next step:
+1. attention: is the aggregation works for predicting the last token?
+2. what are the different variations of transformers, eg. for large models and small models
+2. what is residual path

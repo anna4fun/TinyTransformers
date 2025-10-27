@@ -1,7 +1,7 @@
 import pytest
 import torch
 from config import ModelConfig, DataConfig
-from data_loader import make_dataloaders
+from data_loader import make_dataloaders, decode, encode
 from self_attention_head import SelfAttentionHead
 from gpt import GPTLanguageModel
 
