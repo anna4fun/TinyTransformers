@@ -1,6 +1,5 @@
-My question is regarding the attention dot product the V, here attention = Q.K.transpose() with the lower triangle mask: 
-I know that V stands for the information of X, V's shape is (B,T,hs) where B is batch size, T is sequence length, hs is the head size; 
-when attention @ V, would this produce the prediction of next token of only the last token of the sequence?
+# Q, K, V of Self Attention Explained
+What is produced by `attention @ V`?
 
 ![kqv.png](../pictures/kqv.png)
 
@@ -33,7 +32,7 @@ Let’s recall what Q, K, V means:
 
 ### 1. Affinity Map/Matrix
 
-$$ \text{affinity_matrix} = Q K^T / \sqrt{h_s} $$ 
+$$ \text{affinity matrix} = Q K^T / \sqrt{h_s} $$ 
 
 dimension (B,T,T)
 

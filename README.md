@@ -6,7 +6,7 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
 I plan to integrate MLFlow into this repo for experiment instrumentation.
 
 next step:
-1. attention: is the aggregation works for predicting the last token?
+1. Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)
 2. what are the different variations of transformers, eg. for large models and small models
 2. what is residual path
 3. what is the output of transformers?
