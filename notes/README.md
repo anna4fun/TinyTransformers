@@ -12,7 +12,8 @@ I tried One-Hot-Encoding first because it's quickly, and then realized it doesn'
 4. 2025/10/20 - 21: Structured the Bigram language model to be software dev style - there're source code, test code, train code and model checkpoints
 5. 2025/10/22: initialize the gpt class and self attention head class
 6. 2025/10/23: continue on self attention head
-7. 2025/10/24: finish self attention, moving on to multi-head attention and forward pass
+7. 2025/10/24: finish self attention, moving on to multi-head attention and forward pass, add drop-out block
+8. 2025/10/27: test drop-out block, deep dive Q, K, V
 
 ## Data Loading
 The `get_batch` function gets a `batch_size` slices of x and y, 2 observations
