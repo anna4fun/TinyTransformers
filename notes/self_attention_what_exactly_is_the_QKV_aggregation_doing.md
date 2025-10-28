@@ -2,9 +2,11 @@ My question is regarding the attention dot product the V, here attention = Q.K.t
 I know that V stands for the information of X, V's shape is (B,T,hs) where B is batch size, T is sequence length, hs is the head size; 
 when attention @ V, would this produce the prediction of next token of only the last token of the sequence?
 
+![kqv.png](../pictures/kqv.png)
+
 ## TL;DR
 The self attention can be broken down into 2 conceptual pillars:
-1. The **Attention Weights** blob preserves the pairwise similarity between tokens within each sequence and each batch。
+1. The **Attention Weights** blob preserves the pairwise similarity between tokens within each sequence and each batch. Similarity is based on the dot product of `Q` and `K`, where `Q` stands for what the token is looking for and `K` as what each token offers.
 Each row represents a probability distribution showing how much a given token should attend to every other token (including itself) when building contextual meaning.
 2. The **Contextual Embedding**, aka the weighted average of attention over `V`.
 Every token's contextual embedding vector would be the sum of its' attention weights over other tokens times the **information (values)** of other tokens, this produces a context-aware representation that blends information from all relevant tokens according to their learned importance.
@@ -30,7 +32,10 @@ Let’s recall what Q, K, V means:
 | `@ V`                 | aggregates information from relevant tokens into a new representation |
 
 ### 1. Affinity Map/Matrix
-$$ \text{attn_scores} = Q K^T / \sqrt{h_s} $$ is (B,T,T)
+
+$$ \text{affinity_matrix} = Q K^T / \sqrt{h_s} $$ 
+
+dimension (B,T,T)
 
 Caution: B(Batch size) is the number of sequence here, T(time steps) is the number of tokens in each sequence. T is not number of sequence.
 Here, for every sequence b, we have a (T,T) matrix that represents the affinity of token $i$ vs token $j$, $(i,j)$ in $range(1,T)$.
@@ -58,7 +63,9 @@ Within each sequence, the purpose of the mask is to limit the affinity of every 
 Note that, after masking, the first row of the (T,T) will always be $[1, 0, 0, .., 0]$. Since it's always the same, dropouts and padding can do special default treatment to the first row.
 
 ### 3. What is the Weight produced by softmax?
+
 $$ \text{Weights}[b, t, :] = \text{softmax}(\text{Affinity}[b, t, :]) $$
+
 For token t in sequence b, $[b,t,:]$ stands for this token's affinity/attention with all the other T tokens of the same sequence.
 Each row of the softmax weight matrix is a probability distribution over **which tokens within the same sequence are most semantically or contextually related**.
 In decoder, the lower triangular mask only allows each token to look back, as a result we will see all $[b,t, t+1:T]$ entries are 0.
@@ -116,7 +123,9 @@ This means that, for sequence number 2 of this batch, for the 3rd token, it's pr
 | 5           | Token₅  | 0           | masked (future)                       |
 
 Mathmatically speaking:
+
 $$ \text{weights}[b=2,t=3,:] = \text{softmax}(Q[b=2,t=3,:] \cdot K[b=2,:,:]^T / \sqrt{h_s}) $$
+
 $Q[b=2,t=3,:]$ is the query of sequence 2 - token 3, $K[b=2,:,:]$ is the keys of every token in sequence 2.
 The dot product of these 2 represents: for token 3 in sequence 2, how is every token's information in my current sequence match with what am I asking for.
 
@@ -144,6 +153,8 @@ V = torch.tensor([
     [-1.,  1.,  0.],   # v5: "lover"
 ])  
 ```
-Then $\text{Output}[b=2, t=3, :] = 0.5*I + 0.2*am + 0.3*cat = [0.5, 0.2, 0.3]$
+Then 
+
+$$\text{Output}[b=2, t=3, :] = 0.5*I + 0.2*am + 0.3*cat = [0.5, 0.2, 0.3]$$
 
 Noted that $\text{Output}[b=2, t=3, :]$ is not a probability over vocabulary; it’s the representation that will be fed forward (and later projected) to produce logits for predicting the next token at sequence 2 position 4.
