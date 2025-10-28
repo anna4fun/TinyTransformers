@@ -70,12 +70,15 @@ class SelfAttentionHead(nn.Module):
     # Refer to Figure.2 of the Attention is All You Need paper
     def forward(self, x, decoder=True):
         # x should be (B,T, n_embd)
-        # Get weights from decoder block
+        # Get the attention weights from decoder block
         weight = self.calc_weights(x, decoder=decoder)
         # Dropout/Mask some weights to 0 to prevents overfitting
         # Dropout is randomly mask x% of the logits/activations to be 0 at each batch/layer/forward pass
         weight = self.dropout(weight)
-        # Aggregates weights over v
+        # Aggregates weights over v to produce the contextual embedding
+        # For every sequence, every token t's contextual embedding vector is an aggregated attention over all the tokens in the same sequence.
+        # (B=b, T=t, hs) "me as a collective voice of everyone's voice, the stronger the attention, the higher voice"
         v = self.Wv(x)  # (B,T,hs)
-        out = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
-        return out
+        context_embd = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
+        # return the contextual embedding of input x
+        return context_embd
