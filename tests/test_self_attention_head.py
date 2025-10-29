@@ -45,7 +45,7 @@ def test_self_attention_forward(self_attention_head_setup):
     assert output.shape == (s.data_config.batch_size, s.data_config.block_size, s.hs)
     print(output[0])
     # The first row of the output[0] are all zero after adding the dropout, the values of each row also changed, investigate why
-    # 1. “Whole first row became zeros” is expected with causal masks + attn-dropout. For the very first token, the causal mask may allow only one valid key (itself). If dropout removes that single prob, the row becomes all zeros.
+    # 1. “Whole first row became zeros” is expected with causal masks(lower triangle mask) + attn-dropout. For the very first token, the causal mask may allow only one valid key (itself). If dropout removes that single prob, the row becomes all zeros.
     # 2. It’s normal that kept entries change value. PyTorch uses inverted dropout: kept values are scaled by 1/(1-p). So you won’t see “unchanged” 70%—they’re scaled up.
     """
     No dropout
