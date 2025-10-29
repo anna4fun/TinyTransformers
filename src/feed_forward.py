@@ -1,8 +1,11 @@
 import torch.nn as nn
 from config import ModelConfig
 
-class FeedFoward(nn.Module):
+class FeedForward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
+    # Feed Forward is an MLP, added right after the self attention and before the loss, it’s at the token level.
+    # the self attention is the communication that first gather the affinity information
+    # and then the FeedForward makes each token to think about those information independently.
     def __init__(self, config: ModelConfig):
         super().__init__()
         self.config = config

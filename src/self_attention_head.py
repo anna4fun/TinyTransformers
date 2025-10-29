@@ -36,10 +36,10 @@ class SelfAttentionHead(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
 
     def attention(self, x):
+        # x should be (B, T, C), C = n_embd, which includes token embedding and positional embedding
         # Attention: aka, affiliations among tokens within each sequence, no cross sequence or cross batch communications
         # The attention calculate the affinity between token's query and other token's public information
         # affinity's calculation is (cosine) similarity, the dot product of q and k.
-        # x should be (B,T, n_embd), which includes token embedding and positional embedding
         k = self.Wk(x)  # k = x @ Wk, (B,T, hs) ; hs = head_size
         q = self.Wq(x)  # q = x @ Wq,  (B,T, hs)
         attention = q @ k.transpose(-2, -1) # * k.shape[-1] ** -0.5  # (B,T,T)
@@ -77,8 +77,9 @@ class SelfAttentionHead(nn.Module):
         weight = self.dropout(weight)
         # Aggregates weights over v to produce the contextual embedding
         # For every sequence, every token t's contextual embedding vector is an aggregated attention over all the tokens in the same sequence.
+        # which shows how much of each element fuses into this position
         # (B=b, T=t, hs) "me as a collective voice of everyone's voice, the stronger the attention, the higher voice"
         v = self.Wv(x)  # (B,T,hs)
         context_embd = weight@v # (B,T,T) * (B,T,hs) = (B,T,hs)
         # return the contextual embedding of input x
-        return context_embd
+        return context_embd  # (B,T,hs)
