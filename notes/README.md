@@ -14,6 +14,7 @@ I tried One-Hot-Encoding first because it's quickly, and then realized it doesn'
 6. 2025/10/23: continue on self attention head
 7. 2025/10/24: finish self attention, moving on to multi-head attention and forward pass, add drop-out block
 8. 2025/10/27: test drop-out block, deep dive Q, K, V
+9. 2025/10/28: add FeedForward and TransformerBlock classes, think about the dimension of input x, then deep dive into why does layer norm do column-wise normalization and why embedding = features 
 
 ## Data Loading
 The `get_batch` function gets a `batch_size` slices of x and y, 2 observations
