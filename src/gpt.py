@@ -22,15 +22,19 @@ class GPTLanguageModel(nn.Module):
         return token_embedding_table, position_embedding_table
 
     def forward(self, idx, targets=None):
-        # idx is the index(numeric representation) of tokens passed to the model, there're B sentences, each sentence contains T tokens
+        # idx is the index(numeric representation) of tokens passed to the model, there are B sentences, each sentence contains T tokens
         B, T = idx.shape
         token_embd, pos_embd = self.token_position_embedding(idx)
+        # TODO: would position embedding and token embedding be trained separately?
         x = token_embd + pos_embd # broadcast to (B, T, n_embd) + (T, n_embd) = (B, T, n_embd)
+        # Feed-forword is an MLP, added right after the self attention and before the loss, it’s at the token level -> the self attention is the communication that first gather the affinity information and then the FF makes each token to think about those information independently .
         logits = self.lm_head(x) # (B,T, vocab_size)
+        # Question: would the multi-head attention be added here? No, logits is the last step before comparing with the targets and evaluate loss. everything else happens before logits.
         if targets is not None:
             # logits.view(-1, logits.size(-1)):
             # logits.size(-1) means keeping the last dimension, the other -1 tells pytorch to infer the product of the first 2 dimensions
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            # todo: where is the backprop happening to updates the weights with gradients?
         else:
             loss = None
         return logits, loss
