@@ -15,6 +15,7 @@ I tried One-Hot-Encoding first because it's quickly, and then realized it doesn'
 7. 2025/10/24: finish self attention, moving on to multi-head attention and forward pass, add drop-out block
 8. 2025/10/27: test drop-out block, deep dive Q, K, V
 9. 2025/10/28: add FeedForward and TransformerBlock classes, think about the dimension of input x, then deep dive into why does layer norm do column-wise normalization and why embedding = features 
+10. 2025/10/29: train the GPT for the first time, debug the causal/lower triangle mask in the self attention
 
 ## Data Loading
 The `get_batch` function gets a `batch_size` slices of x and y, 2 observations
