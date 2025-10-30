@@ -26,6 +26,6 @@ class ModelConfig:
     device: str = 'mps'
     eval_iters: int = 200
     n_embd: int = 32
-    n_heads: int = 6
+    n_heads: int = 4
     n_layers: int = 6
     dropout: float = 0.2

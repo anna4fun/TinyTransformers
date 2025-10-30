@@ -31,7 +31,13 @@ class SelfAttentionHead(nn.Module):
         # These 3 weights are shared across all tokens and batches — learned during training
         # The Transformer’s power comes from the fact that the same Wq, Wk, Wv are applied to every token, allowing generalization to variable-length sequences.
         # The lower triangle mask for the decoder block that only allows tokens to look back not forward
-        self.register_buffer('tril', torch.tril(torch.ones(data_config.block_size, data_config.block_size))) # (T,T) lower triangle
+        # self.register_buffer('tril', torch.tril(torch.ones(data_config.block_size, data_config.block_size))) # (T,T) lower triangle
+        # precompute a big causal mask and register it so it moves with .to(device)
+        self.register_buffer(
+            "causal_mask",
+            torch.tril(torch.ones(self.data_config.block_size,
+                                  self.data_config.block_size, dtype=torch.bool))
+        )
         # Drop out: randomly set part of each neural net layer's logits/activations to 0, to prevent NN rely on any one of the neurons too much
         self.dropout = nn.Dropout(config.dropout)
 
@@ -58,8 +64,13 @@ class SelfAttentionHead(nn.Module):
         # decoder = True means we want each token to only look left
         if decoder:
             # Apply the lower triangle matrix as the mask
-            tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
-                                         float('-inf'))  # (B, T, T)
+            # tril = attention.masked_fill(self.tril[:self.data_config.block_size, :self.data_config.block_size] == 0,
+            #                              float('-inf'))  # (B, T, T)
+            T = attention.shape[-1]  # current sequence length
+            mask = self.causal_mask[:T, :T]  # (T, T), boolean
+            mask = mask.to(attention.device)  # ensure same device
+            # works for (B, T, T) and (B, nH, T, T) via broadcasting
+            tril = attention.masked_fill(~mask, float("-inf"))
             weight = F.softmax(tril, dim=-1) # (B, T, T)
         # decoder = False means we allow each token to look both right and left
         else:
