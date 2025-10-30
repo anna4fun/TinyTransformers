@@ -20,12 +20,12 @@ At this point:
 ## 🔹 2. Linear projections: Q, K, V are learned mappings *within* this space
 
 Each attention head learns **three linear transformations**:
-[
-Q = x W_Q, \quad K = x W_K, \quad V = x W_V
-]
+
+$$ Q = x W_Q, \quad K = x W_K, \quad V = x W_V $$
+
 where each (W) is a trainable weight matrix:
 
-* (W_Q, W_K, W_V \in \mathbb{R}^{n_{embd} \times head_size})
+$$ (W_Q, W_K, W_V \in \mathbb{R}^{n_{embd} \times head_size}) $$
 
 So what’s happening here?
 
@@ -46,9 +46,8 @@ So you can think of (W_Q, W_K, W_V) as *learned “feature lenses”* that selec
 ## 🔹 3. Attention calculation — still geometric in the embedding space
 
 For one head:
-[
-\text{Attention}(x) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
-]
+
+$$ \text{Attention}(x) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V $$
 
 * The **dot product (QK^T)** is literally a **similarity measure** *within this subspace*.
 * It’s like computing pairwise cosine-like affinities between tokens — but learned directions, not fixed ones.
@@ -65,8 +64,8 @@ During training:
 * The model’s **loss** (e.g., cross-entropy on next-token prediction) flows backward through all layers.
 * Gradients update:
 
-  * (W_Q, W_K, W_V): how to best represent attention directions
-  * (W_{proj}): how to recombine multiple heads
+  * $(W_Q, W_K, W_V)$: how to best represent attention directions
+  * $(W_{proj})$: how to recombine multiple heads
   * The embedding matrix (E): how each token’s initial vector should move in the embedding space so that the attention layers can use it more effectively
 
 So:
@@ -98,4 +97,3 @@ Here’s a geometric way to visualize it:
 
 ---
 
-Would you like me to visualize this with a schematic (showing the embedding space as a high-dimensional “world,” and Q, K, V as separate projection planes within it)? It makes the geometric relationships intuitive at a glance.
