@@ -22,9 +22,7 @@ Each token embedding (length = n_embd) encodes:
 * semantic info (meaning, context, relationships to other words)
 
 So it’s conceptually equivalent to a dense vector of features describing the token, learned by the network. And this set the pave for splitting the embedding space into multiple heads to train their information separately.
-
-🔥 Excellent pair of questions — you’re digging right into the *core geometry* of how Transformers work.
-Let’s unpack both carefully and precisely.
+Embedding is related with the *core geometry* of how Transformers work.
 
 ---
 
