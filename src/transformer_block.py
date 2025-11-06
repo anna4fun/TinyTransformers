@@ -12,6 +12,7 @@ class TransformerBlock(nn.Module):
         self.config = config
         self.data_config = data_config
         # pre-norm attention
+        # TODO: try other normalization, RMSNorm
         self.layer_norm1 = nn.LayerNorm(normalized_shape=config.n_embd)
         self.attention = MultiHeadAttention(config=config, data_config=data_config, num_heads=num_heads) # in (B,T,C), out (B,T,C)
         # pre-norm MLP feed forward
