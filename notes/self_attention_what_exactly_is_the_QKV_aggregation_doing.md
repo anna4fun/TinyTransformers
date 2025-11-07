@@ -10,6 +10,9 @@ Each row represents a probability distribution showing how much a given token sh
 2. The **Contextual Embedding**, aka the weighted average of attention over `V`.
 Every token's contextual embedding vector would be the sum of its' attention weights over other tokens times the **information (values)** of other tokens, this produces a context-aware representation that blends information from all relevant tokens according to their learned importance.
 
+What I found most amazing is the compression, or the reduction of dimensions: `Q`, `K`, `V` each has the dimension of `[B, T, C]` with `C` as the embedding size, which means they are 3 copies of the original embedding space. 
+But after the attention calculation, `Q,K,V` are compressed back to the original embedding space dimension `[B, T, C]`.
+
 ## Attention
 
 Let’s recall what Q, K, V means:
@@ -157,3 +160,32 @@ Then
 $$\text{Output}[b=2, t=3, :] = 0.5*I + 0.2*am + 0.3*cat = [0.5, 0.2, 0.3]$$
 
 Noted that $\text{Output}[b=2, t=3, :]$ is not a probability over vocabulary; it’s the representation that will be fed forward (and later projected) to produce logits for predicting the next token at sequence 2 position 4.
+
+
+2025/11/07 Followup: does the contextual embedding created by Q,K,V the same thing as the token embedding
+
+Short answer: **No—they’re different things**, even though they share the same shape ([B,T,C]).
+
+* **Token embedding (static):**
+  You start with an embedding lookup $E\in\mathbb{R}^{V\times C}$. For each token id, you grab a row of $E$ (and add position info) to get $X^{(0)}\in\mathbb{R}^{B\times T\times C}$. This vector depends only on the token (and position), **not** on its neighbors.
+
+* **Contextual embedding (context-dependent “hidden state”):**
+  After passing through self-attention and the MLP (plus residuals/LayerNorm), you get $X^{(l)}$ (or $X^{(L)}$ at the top). This representation **does** depend on surrounding tokens—the “context.”
+
+* **Where Q/K/V fit:**
+  Within a layer, you form
+   $$ Q = X^{(l)}W_Q,\quad K = X^{(l)}W_K,\quad V = X^{(l)}W_V. $$
+  The attention output is
+  
+  $$\text{Attn}(X^{(l)})=\text{softmax}!\left(\frac{QK^\top}{\sqrt{d_h}}\right)V\ \xrightarrow{\text{concat heads}}\ \cdot W_O, $$
+  then residual + MLP → $X^{(l+1)}$.
+  **Q/K/V are intermediate projections**, not embeddings you keep; the **contextual embedding is $X^{(l+1)}$** (or any layer’s hidden state), produced *using* Q/K/V.
+
+* **Why the confusion:**
+  Shapes match (([B,T,C])), and some code calls these tensors “embeddings.” But:
+
+  * **Token embedding** = lookup from (E).
+  * **Contextual embedding** = the layer outputs (hidden states) after attention/MLP.
+  * **Q/K/V** = temporary, per-head feature spaces used to *compute* attention weights and payloads.
+
+* **Bonus (LMs):** many LMs **tie** the output softmax weights to the input embedding $E$ (use $E^\top$ to get logits). That’s another reason both ends live in the same (C)-dim space—but the hidden states are still contextual, not the same as the original token lookup.
