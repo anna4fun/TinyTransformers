@@ -53,9 +53,9 @@ class CausalSelfAttention(nn.Module):
         # blob 1: attention weights
         attn = q @ k.transpose(2,3) * (1.0 / math.sqrt(k.size(-1))) # (B, nh, T, T), **1.0** not 1
         # broadcast the lower triangle mask [1,1,T,T] across [B, nh, T, T]
-        mask = self.bias[0,0,T,T] == 0 # (1,1,T,T), True where to block, take only the “active” square
+        mask = self.bias[:,:,T,T] == 0 # (1,1,T,T), True where to block, take only the “active” square
         attn = attn.masked_fill(mask, float('-inf'))  # (B, nh, T, T), replace the 0 with -inf
-        attn = attn.softmax(dim=-1)  # (B, nh, T, T), softmax the last column
+        attn = attn.softmax(dim=-1)  # (B, nh, T, T), softmax the last dimension
         # blob 2: contextual embedding
         y = attn @ v  # (B, nh, T, T) * (B, nh, T, hs) -> (B, nh, T, hs)
         # swap the dimensions back to (B, T, nh, hs) and transform (nh, hs) back to (C)
@@ -69,9 +69,9 @@ class CausalSelfAttention(nn.Module):
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln_1 = nn.LayerNorm(config.n_embd)
         self.attn = CausalSelfAttention(config)
-        self.ln2 = nn.LayerNorm(config.n_embd)
+        self.ln_2 = nn.LayerNorm(config.n_embd)
         self.mlp = MLP(config) # Feed Forward
 
     def forward(self, x):
