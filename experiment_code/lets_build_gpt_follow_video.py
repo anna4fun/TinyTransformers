@@ -65,8 +65,8 @@ class CausalSelfAttention(nn.Module):
         # blob 2: contextual embedding
         y = attn @ v  # (B, nh, T, T) * (B, nh, T, hs) -> (B, nh, T, hs)
         # swap the dimensions back to (B, T, nh, hs) and transform (nh, hs) back to (C)
+        # calling .contiguous() makes a contiguous copy so view can safely collapse the last two dims.
         y = y.transpose(1, 2).contiguous().view(B, T, C) # (B, T, C)
-        # contiguous: Returns a contiguous in memory tensor containing the same data as self tensor.
         # project the dimension back
         y = self.c_proj(y)
         return y
