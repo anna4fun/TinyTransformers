@@ -3,6 +3,7 @@ import math
 from dataclasses import dataclass
 import torch
 import torch.nn as nn
+from spacy import tokenizer
 from torch.nn import functional as F
 
 #----------------------------------------------
@@ -43,7 +44,7 @@ class CausalSelfAttention(nn.Module):
         B, T, C = x.shape
         qkv = self.c_attn(x) # (B, T, 3*n_embd)
         # Split `qkv` along dim=2(last dim), size of each chunk equals **n_embd**
-        q, k, v = qkv.split(split_size_or_sections=self.n_embd, dim=2)
+        q, k, v = qkv.split(split_size=self.n_embd, dim=2)
         # Transform the last dim C into a rectangular shape (nh, hs): nh: n_heads, hs: head size = n_embd//n_heads
         # transpose(1,2): swap dim 1 and 2 (from dim 0, 1, 2, 3)
         q = q.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
@@ -75,8 +76,8 @@ class Block(nn.Module):
         self.mlp = MLP(config) # Feed Forward
 
     def forward(self, x):
-        x = x + self.multihead_attention(self.ln1(x))
-        x = x + self.mlp(self.ln2(x))
+        x = x + self.attn(self.ln_1(x))
+        x = x + self.mlp(self.ln_2(x))
         return x
 
 
@@ -107,6 +108,28 @@ class GPT(nn.Module):
         )
         # the classifier that project next word prediction from embedding vector into tokens in the vocabulary
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+
+    # copy over the forward function to test next word generation
+    # todo: write it myself
+    def forward(self, idx, targets=None):
+        # idx is of shape (B, T)
+        B, T = idx.size()
+        assert T <= self.config.block_size, f"Cannot forward sequence of length {T}, block size is only {self.config.block_size}"
+        # forward the token and posisition embeddings
+        pos = torch.arange(0, T, dtype=torch.long, device=idx.device) # shape (T) , train it on GPU
+        pos_emb = self.transformer.wpe(pos) # position embeddings of shape (T, n_embd), it's the same for all rows(sequence)
+        tok_emb = self.transformer.wte(idx) # token embeddings of shape (B, T, n_embd)
+        x = tok_emb + pos_emb
+        # forward the blocks of the transformer
+        for block in self.transformer.h:
+            x = block(x)
+        # forward the final layernorm and the classifier
+        x = self.transformer.ln_f(x)
+        logits = self.lm_head(x) # (B, T, vocab_size)
+        loss = None
+        if targets is not None:
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+        return logits, loss
 
     # port the params from HuggingFace gpt2 and use it to initialize our model
     # the following module is a constructor that returns the GPT object if we just give it the model type (one of the 'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl')
@@ -160,5 +183,82 @@ class GPT(nn.Module):
         return model
 
 # --------------------------------------------------------------------------------------------
-model = GPT.from_pretrained('gpt2')
+"""
+The word generation task 
+We are basically going to reproduce the following code with our own model
+
+from transformers import pipeline, set_seed
+generator = pipeline('text-generation', model='gpt2')
+set_seed(42)
+generator("Hello, I'm a language model,", max_length=30, num_return_sequences=5, truncation=True)
+"""
+device = "mps"
+model_type = "gpt2"
+max_length = 30
+max_return_sequences = 5
+
+model = GPT.from_pretrained(model_type) # since we port the HF params, we are basically loading a pre-trained model
 print("didn't crash yay")
+model.eval()
+model.to(device) # moving the pre-trained model (aka all it's params and architecture) to GPU
+
+""" The prompt is "Hello, I'm a language model,", we first need to encode it. """
+prompt = "Hello, I'm a language model,"
+# step 1: tokenization
+import tiktoken
+enc = tiktoken.get_encoding(model_type)
+tokens = enc.encode(prompt) # tokens = [15496, 11, 314, 1101, 257, 3303, 2746, 11]
+tokens = torch.tensor(tokens, dtype=torch.long) # (8,)
+tokens = tokens.unsqueeze(0).repeat(max_return_sequences, 1) # (5, 8)
+x = tokens.to(device)
+
+# generate
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+while x.size(1) < max_length:
+    # forward the model to get the logits
+    with torch.no_grad():
+        logits, loss = model(x) # (B, T, vocab_size)
+        logits = logits[:, -1, :] # (B, vocab_size) get the logits of the last position
+        probs = F.softmax(logits, dim=-1) # get the prob distribution (B, vocab_size)
+        # do top-k sampling of 50 (HG default), we don't sample from the uncommon tokens
+        # topk_prob is (5, 50), topk_indices is (5, 50)
+        topk_probs, topk_indices = torch.topk(probs, k=50, dim=-1) # (B, 50)
+        # select a token from the top-k prob
+        ix = torch.multinomial(topk_probs, 1)  # (B, 1)
+        # gather the corresponding indices
+        xcol = torch.gather(topk_indices, dim=-1, index=ix)
+        # append to the sequence
+        x = torch.cat((x, xcol), dim=1)
+
+for i in range(max_return_sequences):
+    tokens = x[i, :max_length].tolist()
+    # decoded = tokenizer.decode(tokens) # interesting, the tokenizer is calling 'spacy.tokenizer'
+    decoded = enc.decode(tokens)
+    print(">", decoded)
+
+# todo: the generated results don't match with the ones in the video, why?
+"""
+> Hello, I'm a language model, you're a model?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+> Hello, I'm a language model, a concept a is a, concept a, is concept a, is concept a language, is a are concept
+> Hello, I'm a language model, and language the language the model a model the model the language the language the model the model the model the language
+> Hello, I'm a language model, a person a part of a, part of language, part of language, part of language a person, part
+> Hello, I'm a language model, no- as I're language- a language as a language as- no- as- the language a-
+"""
