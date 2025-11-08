@@ -10,8 +10,7 @@ Each row represents a probability distribution showing how much a given token sh
 2. The **Contextual Embedding**, aka the weighted average of attention over `V`.
 Every token's contextual embedding vector would be the sum of its' attention weights over other tokens times the **information (values)** of other tokens, this produces a context-aware representation that blends information from all relevant tokens according to their learned importance.
 
-What I found most amazing is the compression, or the reduction of dimensions: `Q`, `K`, `V` each has the dimension of `[B, T, C]` with `C` as the embedding size, which means they are 3 copies of the original embedding space. 
-But after the attention calculation, `Q,K,V` are compressed back to the original embedding space dimension `[B, T, C]`.
+What I found deeply astonishing is the connection between CNN and Self Attention, both do weighted aggregation over local neighbors and both decouple the task of learning different features to multiple heads/filters.
 
 ## Attention
 
@@ -162,7 +161,9 @@ $$\text{Output}[b=2, t=3, :] = 0.5*I + 0.2*am + 0.3*cat = [0.5, 0.2, 0.3]$$
 Noted that $\text{Output}[b=2, t=3, :]$ is not a probability over vocabulary; it’s the representation that will be fed forward (and later projected) to produce logits for predicting the next token at sequence 2 position 4.
 
 
-2025/11/07 Followup: does the contextual embedding created by Q,K,V the same thing as the token embedding
+
+2025/11/07 Followups
+## Does the contextual embedding created by Q,K,V the same thing as the token embedding
 
 Short answer: **No—they’re different things**, even though they share the same shape ([B,T,C]).
 
@@ -189,3 +190,57 @@ Short answer: **No—they’re different things**, even though they share the sa
   * **Q/K/V** = temporary, per-head feature spaces used to *compute* attention weights and payloads.
 
 * **Bonus (LMs):** many LMs **tie** the output softmax weights to the input embedding $E$ (use $E^\top$ to get logits). That’s another reason both ends live in the same (C)-dim space—but the hidden states are still contextual, not the same as the original token lookup.
+
+
+## Analogy between CNN and Self Attention
+I see that each self attention output a size (B,T,C) contextual embedding matrix that tells the aggregated information of how each token's value aggregates over other token's affiliation within the same sequence. Based on that, I feel that this almost like Convolutional Neural Net where the convolution kernel gets local relationships, do you think this analogy make sense?
+
+Short answer: the analogy helps, but only **partly**. Here’s a crisp map of where it fits and where it breaks.
+
+### Why the analogy works
+
+* **Weighted aggregation of neighbors.**
+  A 1-D conv at position (t) does $y_t=\sum_{\Delta\in\mathcal K} w_\Delta , x_{t+\Delta}$.
+  Self-attention does $y_t=\sum_{s=1}^{T} \alpha_{t,s}, V_s$ with $\alpha_{t,s}=\text{softmax}*s(Q_t \cdot K_s/\sqrt{d_h}+b_{t,s})$.
+  It’s the *same structural pattern*: take a neighborhood (conv: fixed local window; attention: potentially **all** tokens) and form a weighted sum.
+
+* **Causal/local variants feel even more conv-like.**
+  Causal masks (only attend to $s\le t$) mimic a **causal 1-D conv**. Local attention (restrict $|t-s|\le W$) ≈ conv with kernel size $2W{+}1$.
+
+* **Multiple heads ≈ multiple filters.**
+  Each head learns a different “view,” akin to multiple conv kernels capturing different features.
+
+### Where it breaks down
+
+* **Static vs. input-conditioned kernels.**
+  Convs use the **same weights** everywhere (translation equivariant, Toeplitz).
+  Attention’s “kernel” $\alpha_{t,s}$ is **data-dependent** (changes with the sequence), and it’s **normalized** (softmax). This makes attention *adaptive* and *non-stationary*.
+
+* **Receptive field.**
+  Convs are **local by design** (unless dilated/many layers).
+  Attention is **global in one hop** (O$(T^2)$ pairs), so it captures long-range dependencies without stacking depth or dilation.
+
+* **Positional bias.**
+  Convs bake in translation equivariance; they don’t need position encodings.
+  Attention **needs** positional info (absolute, relative, or rotary) to know “who’s near whom.” Without it, it’s permutation-invariant.
+
+* **Computation & memory.**
+  Conv: O$(T\cdot k\cdot C^2)$ or better, very cache-friendly.
+  Full attention: O$(T^2\cdot C)$ memory/compute for scores; many variants exist to tame this (local, sliding-window, low-rank).
+
+* **Inductive bias vs. flexibility.**
+  Convs have a strong locality/translation bias—great when patterns are spatially local and repeated.
+  Attention has a weaker prior but greater flexibility—can learn both local *and* arbitrary long-range structure.
+
+### Useful mental model
+
+> **Self-attention is like a content-aware, globally connected “convolution” whose kernel is computed from the input itself and changes at every position and every example.**
+
+### Practical implications
+
+* Early Transformer layers often learn **local** patterns (heads focus near the diagonal), resembling convs; deeper layers increasingly capture **long-range** structure.
+* If your task is known to be local (e.g., certain audio/vision pipelines), **local/relative-position attention** or even **hybrid conv–attention** blocks (Conv + MHSA) can be compute-better and inductive-bias-friendlier.
+* Conversely, for language with long contexts, attention’s **adaptive global** mixing is the win that classic convs need many layers/dilation to approximate.
+
+So: your intuition is good—think of attention as a *dynamic, input-conditioned generalization* of convolution, with global reach and weaker built-in priors.
+
