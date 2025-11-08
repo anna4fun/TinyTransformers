@@ -75,21 +75,21 @@ and try to minimize that, but that function is **flat** near 1 and **non-smooth*
 
 The log brings two crucial benefits:
 
-1. **Convexity / curvature**: makes large errors (small (p_{j*})) penalized more strongly and yields smooth gradients.
+1. **Convexity / curvature**: makes large errors $small (p_{j*})$ penalized more strongly and yields smooth gradients.
 2. **Additivity**: logs turn products of probabilities into sums, so averaging across time steps = total log-likelihood over the corpus.
 
 ---
 
 ## 🧮 5️⃣ Example: why log matters
 
-| (p_{\text{correct}}) | (1 - p) | (-\log p) |
-| -------------------- | ------- | --------- |
+| $p_{\text{correct}}$ | $1 - p$ | $-\log p$ |
+|----------------------|---------|-----------|
 | 0.9                  | 0.1     | 0.105     |
 | 0.5                  | 0.5     | 0.693     |
 | 0.1                  | 0.9     | 2.303     |
 
-* With (1-p): difference between 0.5 and 0.1 is only 0.4.
-* With (-\log p): difference is 1.61 — much larger penalty → stronger gradient when the model is very wrong.
+* With $1-p$: difference between 0.5 and 0.1 is only 0.4.
+* With $-\log p$: difference is 1.61 — much larger penalty → stronger gradient when the model is very wrong.
 
 That steep slope near small (p) is what drives learning fast when predictions are bad.
 
