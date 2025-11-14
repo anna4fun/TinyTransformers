@@ -9,6 +9,7 @@ class GPTLanguageModel(nn.Module):
     def __init__(self, config:ModelConfig, data_config:DataConfig):
         super().__init__()
         # todo: how to customize head_size?
+        # todo: when the optimizer called the model.parameters(), is it calling the constructors?
         self.config = config
         # token_embedding_table is an intermediate step from token embd to logits
         self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
