@@ -18,5 +18,5 @@ class FeedForward(nn.Module):
         )
 
     def forward(self, x):
-        # todo: is the input x = output of the multihead attention? (bc L1's input dim = n_embd)
+        # is the input x = output of the multihead attention? (bc L1's input dim = n_embd): Yes. see the Fig.2, without cross-attention, multihead attention feed into MLP ("Feed Forward")
         return self.net(x)

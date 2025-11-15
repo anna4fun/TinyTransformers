@@ -36,7 +36,7 @@ class GPTLanguageModel(nn.Module):
         # TODO: would position embedding and token embedding be trained separately?
         x = token_embd + pos_embd # broadcast to (B, T, n_embd) + (T, n_embd) = (B, T, n_embd)
         # Transformer Block
-        x = self.block(x) # in (B,T,C) todo: out dimension
+        x = self.block(x) # in (B,T,C) , out dimension (B, T, C), why in and out dim are the same? because attention doesn't change dimension of x, MLP block upsize and downsize it back.
         # Layer Norm
         x = self.ln_f(x) # in (B,T,C)
         # Feed forward is an MLP, added right after the self attention and before the loss, it’s at the token level -> the self attention is the communication that first gather the affinity information and then the FF makes each token to think about those information independently .

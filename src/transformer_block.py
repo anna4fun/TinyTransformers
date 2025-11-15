@@ -23,6 +23,8 @@ class TransformerBlock(nn.Module):
         # x is shape (B,T,C), C = n_embd
         # pre-norm attention: layer norm first, then attention; this is different from the post-norm paradigm of the Attention paper Figure 2.
         # x = x + contextual embedding of x -> residual of x
+        # this way we keep a clean residual path way from targets all the way back to the input text
+        # the gradients also equally split between the x and the Attention+MLP blocks
         x = self.layer_norm1(x)
         x = x + self.attention(x) # attention(x): MultiHeadAttention.forward(x)
         # pre-norm feed forward

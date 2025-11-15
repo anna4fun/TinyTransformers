@@ -94,12 +94,13 @@ class GPT(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        # note that Pytorch handled the initialization of parameters already
         self.transformer = nn.ModuleDict(
             # ModuleDict allows you to index into submodules using keys
             dict(
                 # nn.Embedding is a fancy wrapper of a tensor of values which we can access its element by indexing into the rows
-                wte = nn.Embedding(config.vocab_size, config.n_embd),
-                wpe = nn.Embedding(config.block_size, config.n_embd),
+                wte = nn.Embedding(config.vocab_size, config.n_embd), # the weights for token embd
+                wpe = nn.Embedding(config.block_size, config.n_embd), # the weights for position embd
                 # nn.ModuleList creates a model list so we can index it using integers like h.0 to h.11
                 h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
                 # the final layer norm added to the attention paper figure 2 after publishing
@@ -109,26 +110,42 @@ class GPT(nn.Module):
         # the classifier that project next word prediction from embedding vector into tokens in the vocabulary
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
-    # copy over the forward function to test next word generation
-    # todo: write it myself
+    # Forward is just an implementation of the Decoder architecture of the attention paper figure 2
     def forward(self, idx, targets=None):
         # idx is of shape (B, T)
-        B, T = idx.size()
-        assert T <= self.config.block_size, f"Cannot forward sequence of length {T}, block size is only {self.config.block_size}"
-        # forward the token and posisition embeddings
-        pos = torch.arange(0, T, dtype=torch.long, device=idx.device) # shape (T) , train it on GPU
-        pos_emb = self.transformer.wpe(pos) # position embeddings of shape (T, n_embd), it's the same for all rows(sequence)
-        tok_emb = self.transformer.wte(idx) # token embeddings of shape (B, T, n_embd)
-        x = tok_emb + pos_emb
-        # forward the blocks of the transformer
+        B, T = idx.shape
+        ## if T is larger than block_size, raise error and break the path
+        assert T <= self.config.block_size, f"Error: Current sequence length {T} is longer than {self.config.block_size} tokens"
+
+        # Embedding
+        ## Pass idx into the token get embedded vector representation of the tokens
+        token_embd = self.transformer.wte(idx) # (B, T, n_embd), every token in sequence T become a (1,n_embd) vector
+        ## Positional embedding doesn't take idx, instead it takes the [0, ..., T] index
+        pos = torch.arange(0, T, dtype=torch.long, device=idx.device) # (T, )
+        pos_embd = self.transformer.wpe(pos) # (T, n_embd)
+        x = token_embd + pos_embd
+
+        # Forward x into the blocks of the transformer
         for block in self.transformer.h:
             x = block(x)
-        # forward the final layernorm and the classifier
-        x = self.transformer.ln_f(x)
+
+        # Forward x to the final layer-norm
+        x = self.transformer.ln_f(x) # (B, T, C)
+
+        # Logits
+        ## for every token in sequence T, we have its next token's probability distribution over the vocabulary
         logits = self.lm_head(x) # (B, T, vocab_size)
+        # noted: logits is every token's probability, not just the last tokens
+
+        # Cross Entropy Loss
+        # for every sequence, the input is [x1,x2,x3], and the target is [x2,x3,x4]. Targets is of shape (B, T)
         loss = None
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            # logits (B, T, vocab_size), targets (B, T)
+            # for easier comparison, each token in the targets should align with each token's probability distribution
+            # so we make logits into (B*T, vocab_size) and targets into (B*T, 1)
+            # logits.size(-1) means keeping the last dimension, the other -1 tells pytorch to infer the product of the first 2 dimensions
+            loss = F.cross_entropy(logits.view(-1, logits.shape(-1)), targets.view(-1))
         return logits, loss
 
     # port the params from HuggingFace gpt2 and use it to initialize our model
@@ -192,13 +209,20 @@ generator = pipeline('text-generation', model='gpt2')
 set_seed(42)
 generator("Hello, I'm a language model,", max_length=30, num_return_sequences=5, truncation=True)
 """
-device = "mps"
+device = "cpu"
+if torch.cuda.is_available():
+    device = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    device = "mps"
+print(f"Using {device} device")
+
 model_type = "gpt2"
 max_length = 30
 max_return_sequences = 5
 
-model = GPT.from_pretrained(model_type) # since we port the HF params, we are basically loading a pre-trained model
-print("didn't crash yay")
+#model = GPT.from_pretrained(model_type) # since we port the HF params, we are basically loading a pre-trained model
+#print("didn't crash yay")
+model = GPT(GPTConfig()) # from random initialized parameters
 model.eval()
 model.to(device) # moving the pre-trained model (aka all it's params and architecture) to GPU
 
