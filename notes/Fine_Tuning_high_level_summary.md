@@ -98,7 +98,8 @@ then the parameters waiting to be trained goes down from $768\times2304=1,769,47
 #### Wrapping the LoRA correction in the Forward function
 Freeze (aka no gradients)
 
-
+2. “Wrap the layer” = change that linear’s `forward` to `W x + B(Ax)`, freezing `W`, training `A,B`.
+3. We **add** the low-rank correction because it’s a compressed approximation of “W + ΔW” from full fine-tuning; addition is stable, easy to turn off, and cleanly modular.
 
 
 "Low-Rank" refers to a smaller dimension of matrix compared with the original attention/MLP parameters. 
