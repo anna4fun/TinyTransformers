@@ -54,7 +54,7 @@ class CausalSelfAttention(nn.Module):
         # blob 1: attention weights
         attn = q @ k.transpose(2,3) * (1.0 / math.sqrt(k.size(-1))) # (B, nh, T, T), **1.0** not 1
         # broadcast the lower triangle mask [1,1,T,T] across [B, nh, T, T]
-        mask = self.bias[:,:,T,T] == 0 # (1,1,T,T), True where to block, take only the “active” square
+        mask = self.bias[:,:,:T,:T] == 0 # (1,1,T,T), True where to block, take only the “active” square
         attn = attn.masked_fill(mask, float('-inf'))  # (B, nh, T, T), replace the 0 with -inf
         attn = attn.softmax(dim=-1)  # (B, nh, T, T), softmax the last dimension
         # blob 2: contextual embedding
@@ -145,7 +145,7 @@ class GPT(nn.Module):
             # for easier comparison, each token in the targets should align with each token's probability distribution
             # so we make logits into (B*T, vocab_size) and targets into (B*T, 1)
             # logits.size(-1) means keeping the last dimension, the other -1 tells pytorch to infer the product of the first 2 dimensions
-            loss = F.cross_entropy(logits.view(-1, logits.shape(-1)), targets.view(-1))
+            loss = F.cross_entropy(logits.view(-1, logits.shape[-1]), targets.view(-1))
         return logits, loss
 
     # port the params from HuggingFace gpt2 and use it to initialize our model
@@ -220,9 +220,9 @@ model_type = "gpt2"
 max_length = 30
 max_return_sequences = 5
 
-#model = GPT.from_pretrained(model_type) # since we port the HF params, we are basically loading a pre-trained model
+model = GPT.from_pretrained(model_type) # since we port the HF params, we are basically loading a pre-trained model
 #print("didn't crash yay")
-model = GPT(GPTConfig()) # from random initialized parameters
+#model = GPT(GPTConfig()) # from random initialized parameters
 model.eval()
 model.to(device) # moving the pre-trained model (aka all it's params and architecture) to GPU
 
