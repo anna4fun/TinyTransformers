@@ -35,6 +35,7 @@ class BlockDataset(Dataset):
         if ids.ndim != 1:
             raise ValueError("ids must be a 1D tensor of token ids")
         if len(ids) <= block_size:
+            # TODO: change this to padding with -Inf
             raise ValueError(
                 f"Not enough tokens ({len(ids)}) for block_size={block_size}. "
                 "Increase corpus or reduce block_size."
@@ -77,6 +78,7 @@ def make_dataloaders(cfg: DataConfig) -> DataBundle:
     train_ds = BlockDataset(train_ids, cfg.block_size)
     val_ds   = BlockDataset(val_ids,   cfg.block_size)
 
+    # todo: maybe send the data to the same device as the model here
     has_cuda = torch.cuda.is_available()
     pin = has_cuda  # only pin if CUDA exists
 

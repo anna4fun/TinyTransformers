@@ -2,7 +2,7 @@ import argparse, torch
 from pathlib import Path
 from simple_bigram import BigramLanguageModel
 from config import ModelConfig
-from data_loader import build_tokenizers, decode  # your helpers
+from data_loaders.data_loader import build_tokenizers, decode  # your helpers
 
 @torch.no_grad()
 def sample(model, start_ids, max_new_tokens=200, temperature=1.0, top_k=None):

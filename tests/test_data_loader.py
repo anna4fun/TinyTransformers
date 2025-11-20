@@ -1,5 +1,5 @@
 from config import DataConfig
-from data_loader import make_dataloaders
+from data_loaders.data_loader import make_dataloaders
 from tokenizers.character_tokenizers import decode
 import torch
 

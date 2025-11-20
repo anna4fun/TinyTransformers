@@ -1,11 +1,8 @@
 import math
 import time
 
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
 from torch.optim import AdamW
-from data_loader import *
+from data_loaders.data_loader import *
 from config import ModelConfig, DataConfig
 from simple_bigram import BigramLanguageModel
 
