@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import torch
 
+# Here is the initial config for playground
 # Data loading
 # frozen=True: prevents accidental mutation
 @dataclass(frozen=True)
@@ -29,3 +30,24 @@ class ModelConfig:
     n_heads: int = 4
     n_layers: int = 6
     dropout: float = 0.2
+
+# Here is the config for HuggingFace GPT2 124M param model
+@dataclass(frozen=True)
+class GPT2DataConfig:
+    batch_size: int = 64
+    block_size: int = 1024
+    shakes_text_path: str = "lecture_code_and_data/input.txt"
+
+@dataclass(frozen=True)
+class GPT2ModelConfig:
+    max_iters: int = 5000
+    eval_interval: int = 500
+    learning_rate: float = 3e-4
+    weight_decay: float = 1e-5
+    dropout: float = 0.2
+    device: str = 'mps'
+    eval_iters: int = 200
+    vocab_size: int = 50257 # number of tokens: 50,000 BPE + 256 bytes tokens(the leaves of the BPE tree) + 1 <|endoftext|> token that delimites different documents
+    n_embd: int = 768 # 768=64x12
+    n_layers: int = 12
+    n_heads: int = 12
