@@ -6,6 +6,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from config import DataConfig
+from tokenizers import character_tokenizers
 
 # -------------------------
 # Config
@@ -17,24 +18,6 @@ class DataBundle(TypedDict):
     val_loader: DataLoader
     vocab_size: int
     block_size: int
-
-# -------------------------
-# Tokenization
-# -------------------------
-# The simplest tokenizer, every tokenizer contains the rule of how to break words and sentences, and a pair of encode and decode
-def build_tokenizers(text: str) -> Tuple[Dict[str,int], Dict[int,str]]:
-    # NOTE: char-level; includes whitespace and punctuation by design
-    chars = sorted(list(set(text)))
-    stoi = {ch: i for i, ch in enumerate(chars)}
-    itos = {i: ch for ch, i in stoi.items()}
-    return stoi, itos
-
-def encode(s: str, stoi: Dict[str,int]) -> List[int]:
-    # Will KeyError on unseen chars; fine as long as you fit on the full corpus.
-    return [stoi[ch] for ch in s]
-
-def decode(ids: List[int], itos: Dict[int,str]) -> str:
-    return ''.join(itos[i] for i in ids)
 
 # -------------------------
 # IO
@@ -75,8 +58,8 @@ def make_dataloaders(cfg: DataConfig) -> DataBundle:
     if not text:
         raise ValueError(f"Empty corpus at {cfg.text_path}")
 
-    stoi, itos = build_tokenizers(text)
-    data = torch.tensor(encode(text, stoi), dtype=torch.long)
+    stoi, itos = character_tokenizers.build_tokenizers(text)
+    data = torch.tensor(character_tokenizers.encode(text, stoi), dtype=torch.long)
 
     # Hold out at least one full block for validation
     min_val = cfg.block_size + 1
