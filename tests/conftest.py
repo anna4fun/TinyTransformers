@@ -7,7 +7,7 @@ import pytest
 from dataclasses import dataclass
 
 from config import DataConfig, ModelConfig
-from data_loader import make_dataloaders
+from data_loaders.data_loader import make_dataloaders
 from gpt import GPTLanguageModel
 
 
@@ -64,11 +64,11 @@ def self_attention_head_setup() -> SelfAttentionHeadTestSetup:
     data_config = DataConfig(block_size=15, batch_size=8, val_frac=0.01, seed=42, shuffle=True)
     bundle = make_dataloaders(data_config)
     vocab_size = bundle["vocab_size"]
-    model_config = ModelConfig(vocab_size=vocab_size, n_embd=10)
+    model_config = ModelConfig(vocab_size=vocab_size, n_embd=4)
     # first load the GPT main model, we need it for the embedding
     model = GPTLanguageModel(model_config, data_config)
     xb, yb = next(iter(bundle["train_loader"]))
-    te, pe = model.token_position_embedding(xb, model_config)
+    te, pe = model.token_position_embedding(xb)
     x = te + pe  # x is token + position embedded xb
     return SelfAttentionHeadTestSetup(
         data_config=data_config,

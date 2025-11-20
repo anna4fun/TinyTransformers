@@ -1,9 +1,8 @@
 import pytest
 import torch
-from config import ModelConfig, DataConfig
-from data_loader import make_dataloaders, decode, encode
+from tokenizers.character_tokenizers import decode, encode
 from self_attention_head import SelfAttentionHead
-from gpt import GPTLanguageModel
+
 
 def test_self_attention(self_attention_head_setup):
     s = self_attention_head_setup
