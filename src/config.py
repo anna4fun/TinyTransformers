@@ -37,6 +37,8 @@ class GPT2DataConfig:
     batch_size: int = 64
     block_size: int = 1024
     shakes_text_path: str = "lecture_code_and_data/input.txt"
+    shuffle: bool = True
+    seed: int = 1337
 
 @dataclass(frozen=True)
 class GPT2ModelConfig:
