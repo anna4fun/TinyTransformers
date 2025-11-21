@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from config import DataConfig
-from tokenizers import character_tokenizers
+from local_tokenizers import character_tokenizers
 
 # -------------------------
 # Config

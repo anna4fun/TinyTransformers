@@ -1,6 +1,6 @@
 import pytest
 import torch
-from tokenizers.character_tokenizers import decode, encode
+from local_tokenizers.character_tokenizers import decode, encode
 from self_attention_head import SelfAttentionHead
 
 

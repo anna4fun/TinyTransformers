@@ -26,7 +26,8 @@ class MLP(nn.Module):
 class CausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
-        # c_attn is a concatenation of Q,K,V, each is of dim (n_embd, n_embd)
+        # c_attn is a concatenation of the **weights**  of Q,K,V, each is of dim (n_embd, n_embd)
+        # (c_attn) weight Q, K, V will project x to difference subspaces, and we will need c_proj to project them back to x's original space
         self.c_attn = nn.Linear(config.n_embd, config.n_embd*3)
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
         self.n_head = config.n_head
