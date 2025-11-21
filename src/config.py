@@ -39,9 +39,6 @@ class GPT2DataConfig:
     shakes_text_path: str = "lecture_code_and_data/input.txt"
     shuffle: bool = True
     seed: int = 1337
-
-@dataclass(frozen=True)
-class GPT2ModelConfig:
     max_iters: int = 5000
     eval_interval: int = 500
     learning_rate: float = 3e-4
@@ -49,7 +46,7 @@ class GPT2ModelConfig:
     dropout: float = 0.2
     device: str = 'mps'
     eval_iters: int = 200
-    vocab_size: int = 50257 # number of tokens: 50,000 BPE + 256 bytes tokens(the leaves of the BPE tree) + 1 <|endoftext|> token that delimites different documents
-    n_embd: int = 768 # 768=64x12
-    n_layers: int = 12
-    n_heads: int = 12
+    vocab_size: int = 50257  # number of tokens: 50,000 BPE + 256 bytes tokens(the leaves of the BPE tree) + 1 <|endoftext|> token that delimites different documents
+    n_embd: int = 768  # 768=64x12
+    n_layer: int = 12
+    n_head: int = 12
