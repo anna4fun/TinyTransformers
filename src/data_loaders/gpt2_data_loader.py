@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from config import GPT2DataConfig
 import torch.nn as nn
 import tiktoken
+import logging
 
 
 # ----- The GPT2 Data Loader ------
@@ -19,6 +20,20 @@ Process:
 3. Sampling B random starting points, and chunk B batches of tokens from the 1-D tensors.
 4. Return a DataLoader containing x and y (both (B,T)) into the GPT language model 
 """
+
+# -------------------------
+# Logging
+# -------------------------
+logger = logging.getLogger("lm_dataset")
+logger.setLevel(logging.DEBUG)          # Or INFO
+handler = logging.StreamHandler()
+formatter = logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# prevent double logging if module imported multiple times
+logger.propagate = False
+
 
 # -------------------------
 # IO
@@ -53,6 +68,11 @@ class LMSequenceDataset(Dataset):
     from a 1D token tensor.
     Given starting index i, x is tokens[i:i+T], y is tokens[i+1:i+1+T].
     """
+
+    # global counter for logging
+    log_counter = 0
+    max_log_calls = 1  # only log the first 1 calls to avoid spam
+
     def __init__(self, tokens: torch.Tensor, block_size: int):
         self.tokens = tokens
         self.block_size = block_size
@@ -68,6 +88,21 @@ class LMSequenceDataset(Dataset):
     def __getitem__(self, start_idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         x = self.tokens[start_idx:   start_idx+self.block_size]
         y = self.tokens[start_idx+1: start_idx+self.block_size+1]
+        # -------- Logging Block ----------
+        # Log only first few calls to avoid 10k lines of debug spam
+        if LMSequenceDataset.log_counter < LMSequenceDataset.max_log_calls:
+            logger.debug(
+                f"[Dataset] __getitem__ call #{LMSequenceDataset.log_counter}\n"
+                f"  start_idx      = {start_idx}\n"
+                f"  x slice        = [{start_idx}:{start_idx + self.block_size}] "
+                f"(shape: {tuple(x.shape)})\n"
+                f"  y slice        = [{start_idx + 1}:{start_idx + self.block_size + 1}] "
+                f"(shape: {tuple(y.shape)})\n"
+                f"  x[:8] preview  = {x[:8].tolist()}\n"
+                f"  y[:8] preview  = {y[:8].tolist()}"
+            )
+            LMSequenceDataset.log_counter += 1
+        # ---------------------------------
         return x, y
 
 # Wrap DataSet object containing pairs of 1-D x and y into a DataLoader

@@ -2,7 +2,6 @@ import torch
 
 from data_loaders.gpt2_data_loader import make_dataloader, load_tokens, train_valid_split
 from config import GPT2DataConfig
-import tiktoken
 
 def test_gpt2_data_loader_default_input_corpus():
     # The default is the Shakespeare
