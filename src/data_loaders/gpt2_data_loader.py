@@ -19,6 +19,7 @@ Process:
 3. (Deprecated)Slice the long 1-D tensor into batches of X and Y without shuffling. Each X and Y are of size (B,T), each sequence of Y is one token left of each sequence of X.
 3. Sampling B random starting points, and chunk B batches of tokens from the 1-D tensors.
 4. Return a DataLoader containing x and y (both (B,T)) into the GPT language model 
+Warning: do not move data to GPU yet, the entire corpus will be huge and it's better stay at CPU
 """
 
 # -------------------------
