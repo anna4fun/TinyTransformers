@@ -50,3 +50,22 @@ class GPT2DataConfig:
     n_embd: int = 768  # 768=64x12
     n_layer: int = 12
     n_head: int = 12
+
+@dataclass(frozen=True)
+class ExperimentConfig:
+    batch_size: int = 16
+    block_size: int = 32
+    n_embd: int = 64
+    n_head: int = 4
+    n_layer: int = 4
+    shakes_text_path: str = "lecture_code_and_data/input.txt"
+    shuffle: bool = True
+    seed: int = 1337
+    max_iters: int = 5000
+    eval_interval: int = 500
+    learning_rate: float = 3e-4
+    weight_decay: float = 1e-5
+    dropout: float = 0.2
+    device: str = 'mps'
+    eval_iters: int = 200
+    vocab_size: int = 50257

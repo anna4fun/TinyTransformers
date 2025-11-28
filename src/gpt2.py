@@ -214,6 +214,6 @@ class GPT2(nn.Module):
             prob = F.softmax(logits, dim=-1)
             # sample from the prob distribution
             idx_next = torch.multinomial(prob, 1) # (B,1)
-            idx = torch.cat((idx, idx_next), dim=1) # (B, L+1), dim=1 meaning the concatnation on the dim=1 dimension
+            idx = torch.cat((idx, idx_next), dim=1) # (B, L+1), dim=1 meaning the concatenation on the dim=1 dimension
         return idx
 
