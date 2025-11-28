@@ -58,6 +58,10 @@ Q_T \cdot K_1 & \dots & \dots & Q_T \cdot K_T
 \end{bmatrix}
 $$
 
+Note for the dot product: a positive dot product means the 2 vectors are in similar direction, 0 means they are perpendicular, negative means they are in opposite directions.
+
+Example **query** could be "What are the adjective before me?", and this query would attend to tokens with the **key** be "I am an adjective!"
+
 
 ### 2. (Decoder only) Lower triangular mask
 Within each sequence, the purpose of the mask is to limit the affinity of every token to only look at itself and tokens before it. Token 1 can only look at itself, token 2 can look at token 1 and 2, etc.
@@ -169,6 +173,9 @@ Short answer: **No—they’re different things**, even though they share the sa
 
 * **Token embedding (static):**
   You start with an embedding lookup $E\in\mathbb{R}^{V\times C}$. For each token id, you grab a row of $E$ (and add position info) to get $X^{(0)}\in\mathbb{R}^{B\times T\times C}$. This vector depends only on the token (and position), **not** on its neighbors.
+  * Token+Positional embedding: "A fluffy blue creature roamed in the green forest." every token would have its own **independent** embedding vector that also contains the information of where they are in the sequence. 
+  * What "independent" means is that, we map each token by its general meaning, creature could be any random animal or creature, so does the word "fluffy" and "forest".
+  * At this moment, we don't know the relationship between the noun "creature" and it's adjectives "blue" and "fluffy". As a result, we don't know what would happen if we change the adj. from blue into yellow.
 
 * **Contextual embedding (context-dependent “hidden state”):**
   After passing through self-attention and the MLP (plus residuals/LayerNorm), you get $X^{(l)}$ (or $X^{(L)}$ at the top). This representation **does** depend on surrounding tokens—the “context.”

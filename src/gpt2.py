@@ -49,9 +49,11 @@ class CausalSelfAttention(nn.Module):
         q, k, v = qkv.split(split_size=self.n_embd, dim=2)
         # Transform the last dim C into a rectangular shape (nh, hs): nh: n_heads, hs: head size = n_embd//n_heads
         # transpose(1,2): swap dim 1 and 2 (from dim 0, 1, 2, 3)
+        # We are basically projecting every sequence from high dimensional space(n_embd) into a lower dimensional space(head_size)
         q = q.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
         k = k.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
+
         ## Attention
         # blob 1: attention weights
         attn = q @ k.transpose(2,3) * (1.0 / math.sqrt(k.size(-1))) # (B, nh, T, T), **1.0** not 1
@@ -59,6 +61,9 @@ class CausalSelfAttention(nn.Module):
         mask = self.bias[:,:,:T,:T] == 0 # (1,1,T,T), True where to block, take only the “active” square
         attn = attn.masked_fill(mask, float('-inf'))  # (B, nh, T, T), replace the 0 with -inf
         attn = attn.softmax(dim=-1)  # (B, nh, T, T), softmax the last dimension
+        # For each head in nh, the (B, T, T) matrix can be read as:
+        # for each sequence out of the total B sequences, row i in the (T,T) matrix shows how token i attend to all the i-1 tokens before it.
+
         # blob 2: contextual embedding
         y = attn @ v  # (B, nh, T, T) * (B, nh, T, hs) -> (B, nh, T, hs)
         # swap the dimensions back to (B, T, nh, hs) and transform (nh, hs) back to (C)
