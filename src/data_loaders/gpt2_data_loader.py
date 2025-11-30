@@ -65,7 +65,7 @@ def train_valid_split(tokens: torch.Tensor, split_frac: float=0.9) -> Tuple[torc
 
 class LMSequenceDataset(Dataset):
     """
-    Language-model dataset that returns (x, y) pairs of length block_size
+    Language-model dataset that returns a (x, y) tuple, where x, y are both (block_size, ) tensors
     from a 1D token tensor.
     Given starting index i, x is tokens[i:i+T], y is tokens[i+1:i+1+T].
     """
