@@ -1,11 +1,9 @@
 # train_gpt2.py
 import math
-from dataclasses import dataclass
 import torch
 import torch.nn as nn
-from spacy import tokenizer
 from torch.nn import functional as F
-from config import GPT2DataConfig
+from tinygpt.configs.config import GPT2DataConfig
 
 #----------------------------------------------
 class MLP(nn.Module):

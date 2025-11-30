@@ -1,5 +1,5 @@
 import torch.nn as nn
-from config import ModelConfig
+from tinygpt.configs.config import ModelConfig
 
 class FeedForward(nn.Module):
     """ a simple linear layer followed by a non-linearity """

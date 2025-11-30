@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from config import DataConfig, ModelConfig
-from transformer_block import TransformerBlock
-from feed_forward import FeedForward
+from tinygpt.configs.config import DataConfig, ModelConfig
+from tinygpt.block.transformer_block import TransformerBlock
+
 
 class GPTLanguageModel(nn.Module):
     def __init__(self, config:ModelConfig, data_config:DataConfig):

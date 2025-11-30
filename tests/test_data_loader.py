@@ -1,6 +1,6 @@
-from config import DataConfig
-from data_loaders.data_loader import make_dataloaders
-from local_tokenizers.character_tokenizers import decode
+from tinygpt.configs.config import DataConfig
+from tinygpt.data_loaders.data_loader import make_dataloaders
+from tinygpt.local_tokenizers.character_tokenizers import decode
 import torch
 
 def test_make_dataloaders():

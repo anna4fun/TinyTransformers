@@ -2,9 +2,8 @@ import math
 import time
 
 from torch.optim import AdamW
-from data_loaders.data_loader import *
-from config import ModelConfig, DataConfig
-from gpt import GPTLanguageModel
+from tinygpt.configs.config import ModelConfig, DataConfig
+from tinygpt.models.gpt import GPTLanguageModel
 
 @torch.no_grad()
 def evaluate(model, val_loader, device):

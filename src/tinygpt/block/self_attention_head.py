@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from config import DataConfig, ModelConfig
+from tinygpt.configs.config import DataConfig, ModelConfig
 
 class SelfAttentionHead(nn.Module):
     """ This is the Scaled Dot-Product Attention """

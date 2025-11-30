@@ -1,7 +1,6 @@
 import pytest
 import torch
-from local_tokenizers.character_tokenizers import decode, encode
-from self_attention_head import SelfAttentionHead
+from tinygpt.block.self_attention_head import SelfAttentionHead
 
 
 def test_self_attention(self_attention_head_setup):

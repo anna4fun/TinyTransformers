@@ -1,7 +1,7 @@
-from simple_bigram import *
-from config import *
+from tinygpt.models.simple_bigram import *
+from tinygpt.configs.config import *
 import torch
-import pytest
+
 
 # my original tests before conftest creation
 def test_embedding_table_shape() -> BigramLanguageModel:

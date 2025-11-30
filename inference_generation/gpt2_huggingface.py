@@ -1,6 +1,6 @@
 import tiktoken
-from gpt2 import GPT2
-from config import GPT2DataConfig
+from tinygpt.models.gpt2 import GPT2
+from tinygpt.configs.config import GPT2DataConfig
 import torch
 
 

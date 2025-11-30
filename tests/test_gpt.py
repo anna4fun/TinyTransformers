@@ -1,7 +1,7 @@
 import torch
-from gpt import GPTLanguageModel
-from config import DataConfig, ModelConfig
-from data_loaders.data_loader import make_dataloaders
+from tinygpt.models.gpt import GPTLanguageModel
+from tinygpt.configs.config import DataConfig, ModelConfig
+from tinygpt.data_loaders.data_loader import make_dataloaders
 
 def test_token_position_embedding():
     data_config = DataConfig(block_size=15, batch_size=8, val_frac=0.01, seed=42, shuffle=True)

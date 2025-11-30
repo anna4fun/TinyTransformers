@@ -1,10 +1,7 @@
 import torch
-import wandb
-import logging
-
-from gpt2 import GPT2
-from data_loaders.gpt2_data_loader import make_dataloader
-from config import GPT2DataConfig, ExperimentConfig
+from tinygpt.models.gpt2 import GPT2
+from tinygpt.data_loaders.gpt2_data_loader import make_dataloader
+from tinygpt.configs.config import ExperimentConfig
 
 # Logging
 # wandb.init(project="my-gpt2")

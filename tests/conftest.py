@@ -6,9 +6,9 @@ import torch
 import pytest
 from dataclasses import dataclass
 
-from config import DataConfig, ModelConfig
-from data_loaders.data_loader import make_dataloaders
-from gpt import GPTLanguageModel
+from tinygpt.configs.config import DataConfig, ModelConfig
+from tinygpt.data_loaders.data_loader import make_dataloaders
+from tinygpt.models.gpt import GPTLanguageModel
 
 
 # --- Global settings ---------------------------------------------------------
@@ -39,13 +39,13 @@ def vocab_size() -> int:
 @pytest.fixture(scope="session")
 def bigram_config(vocab_size):
     # Your dataclass config; import from your package
-    from config import ModelConfig
+    from tinygpt.configs.config import ModelConfig
     return ModelConfig(vocab_size=vocab_size)
 
 # --- Model factories ---------------------------------------------------------
 @pytest.fixture
 def bigram(bigram_config):
-    from simple_bigram import BigramLanguageModel
+    from tinygpt.models.simple_bigram import BigramLanguageModel
     return BigramLanguageModel(bigram_config)
 
 

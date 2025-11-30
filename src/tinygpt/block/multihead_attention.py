@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from config import ModelConfig, DataConfig
-from self_attention_head import SelfAttentionHead
+from tinygpt.configs.config import ModelConfig, DataConfig
+from tinygpt.block.self_attention_head import SelfAttentionHead
 
 class MultiHeadAttention(torch.nn.Module):
     """ Multi-Head Attention module """

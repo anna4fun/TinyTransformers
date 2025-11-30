@@ -1,8 +1,8 @@
 import argparse, torch
 from pathlib import Path
-from simple_bigram import BigramLanguageModel
-from config import ModelConfig
-from data_loaders.data_loader import build_tokenizers, decode  # your helpers
+from tinygpt.models.simple_bigram import BigramLanguageModel
+from tinygpt.configs.config import ModelConfig
+from tinygpt.local_tokenizers.character_tokenizers import build_tokenizers, decode  # your helpers
 
 @torch.no_grad()
 def sample(model, start_ids, max_new_tokens=200, temperature=1.0, top_k=None):

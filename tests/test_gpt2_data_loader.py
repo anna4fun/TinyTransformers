@@ -1,7 +1,7 @@
 import torch
 
-from data_loaders.gpt2_data_loader import make_dataloader, load_tokens, train_valid_split
-from config import GPT2DataConfig
+from tinygpt.data_loaders.gpt2_data_loader import make_dataloader, load_tokens, train_valid_split
+from tinygpt.configs.config import GPT2DataConfig
 
 def test_gpt2_data_loader_default_input_corpus():
     # The default is the Shakespeare

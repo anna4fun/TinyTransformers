@@ -5,8 +5,7 @@ from typing import Dict, Tuple
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from config import GPT2DataConfig
-import torch.nn as nn
+from tinygpt.configs.config import GPT2DataConfig
 import tiktoken
 import logging
 

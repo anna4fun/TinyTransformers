@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as f
 import torch.nn as nn
-from config import ModelConfig
+from tinygpt.configs.config import ModelConfig
 
 class BigramLanguageModel(nn.Module):
     def __init__(self, config:ModelConfig):

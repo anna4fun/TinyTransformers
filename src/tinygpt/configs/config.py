@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 import torch
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.resolve()
 
 # Here is the initial config for playground
 # Data loading
 # frozen=True: prevents accidental mutation
 @dataclass(frozen=True)
 class DataConfig:
-    text_path: str = "lecture_code_and_data/input.txt"
+    text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     block_size: int = 128
     batch_size: int = 64
     val_frac: float = 0.01
@@ -36,7 +39,7 @@ class ModelConfig:
 class GPT2DataConfig:
     batch_size: int = 64
     block_size: int = 1024
-    shakes_text_path: str = "lecture_code_and_data/input.txt"
+    shakes_text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     shuffle: bool = True
     seed: int = 1337
     max_iters: int = 5000
@@ -58,7 +61,7 @@ class ExperimentConfig:
     n_embd: int = 64
     n_head: int = 4
     n_layer: int = 4
-    shakes_text_path: str = "lecture_code_and_data/input.txt"
+    shakes_text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     shuffle: bool = True
     seed: int = 1337
     max_iters: int = 5000

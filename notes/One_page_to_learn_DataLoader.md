@@ -1,4 +1,4 @@
-Referencing the [gpt2_data_loader.py](../src/data_loaders/gpt2_data_loader.py)
+Referencing the [gpt2_data_loader.py](../src/tinygpt/data_loaders/gpt2_data_loader.py)
 
 Let’s walk through this *like the DataLoader itself is executing in slow motion*.
 

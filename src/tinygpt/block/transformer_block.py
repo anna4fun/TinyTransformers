@@ -1,7 +1,7 @@
 from torch import nn
-from config import ModelConfig, DataConfig
-from feed_forward import FeedForward
-from multihead_attention import MultiHeadAttention
+from tinygpt.configs.config import ModelConfig, DataConfig
+from tinygpt.block.feed_forward import FeedForward
+from tinygpt.block.multihead_attention import MultiHeadAttention
 
 class TransformerBlock(nn.Module):
     """ Transformer block: communication followed by computation """

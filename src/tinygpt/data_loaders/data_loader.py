@@ -1,12 +1,11 @@
-from dataclasses import dataclass
 from functools import lru_cache
-from typing import Tuple, Dict, List, TypedDict
+from typing import Tuple, Dict, TypedDict
 from pathlib import Path
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
-from config import DataConfig
-from local_tokenizers import character_tokenizers
+from tinygpt.configs.config import DataConfig
+from tinygpt.local_tokenizers import character_tokenizers
 
 # -------------------------
 # Config

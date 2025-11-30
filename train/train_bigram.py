@@ -2,9 +2,8 @@ import math
 import time
 
 from torch.optim import AdamW
-from data_loaders.data_loader import *
-from config import ModelConfig, DataConfig
-from simple_bigram import BigramLanguageModel
+from tinygpt.configs.config import ModelConfig, DataConfig
+from tinygpt.models.simple_bigram import BigramLanguageModel
 
 @torch.no_grad()
 def evaluate(model, val_loader, device):
