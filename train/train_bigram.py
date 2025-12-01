@@ -1,9 +1,11 @@
 import math
 import time
+import torch
 
 from torch.optim import AdamW
 from tinygpt.configs.config import ModelConfig, DataConfig
 from tinygpt.models.simple_bigram import BigramLanguageModel
+from tinygpt.data_loaders.data_loader import make_dataloaders
 
 @torch.no_grad()
 def evaluate(model, val_loader, device):

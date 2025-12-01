@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import torch
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.resolve()
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.resolve()
 
 # Here is the initial config for playground
 # Data loading
