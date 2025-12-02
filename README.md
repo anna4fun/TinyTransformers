@@ -16,6 +16,7 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
 
 
 ### Evaluation during training
+![swanlab_dashboard_overfit_one_batch.png](pictures/swanlab_dashboard_overfit_one_batch.png)
 1. What are the metrics to evaluate how good the trained GPT is?
 2. How to observe these metrics?
 3. Can I visualize or test the intermediate output of the GPT?
