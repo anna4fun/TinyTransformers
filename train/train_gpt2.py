@@ -9,7 +9,7 @@ import os
 from torch.utils.data import DataLoader
 from tinygpt.models.gpt2 import GPT2
 from tinygpt.data_loaders.gpt2_data_loader import make_dataloader
-from tinygpt.configs.config import ExperimentConfig
+from tinygpt.configs.config import ExperimentConfig, GPT2DataConfig
 
 @torch.no_grad()
 def evaluate(model: GPT2, valid_loader: DataLoader, device):
@@ -26,7 +26,7 @@ def evaluate(model: GPT2, valid_loader: DataLoader, device):
 
 def main():
     # ----------------------
-    # 1. Device Setup
+    # 1. Setup Device
     # ----------------------
     device="cpu"
     if torch.cuda.is_available():
@@ -36,31 +36,28 @@ def main():
     print(device)
 
     # ----------------------
-    # 2. Setup Model parameters and initialized with SwanLab
+    # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
-    toyconfig = ExperimentConfig()
+    toyconfig = GPT2DataConfig()
     config_dict = dataclasses.asdict(toyconfig)
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
+        experiment_name="gpt2-shakespeare-v1",  # Custom experiment name
         config=config_dict,  # Log hyperparameters
-        mode="local"  # Use local mode (no cloud sync)
+        mode="local",  # Use local mode (no cloud sync)
+        description = "GPT-2 124M experiment training on Shakespeare text (custom learning rate)",
+        tags = ["GPT2", "Experiment", "Shakespeare", "small dataset"],
     )
 
     # ----------------------
-    # 3. Data, Model, Optimizer Setup
+    # 3. Setup Data(on CPU), Model, Optimizer
     # ----------------------
     dl = make_dataloader(toyconfig)
     train_dl = dl["train_dl"]
     valid_dl = dl["valid_dl"]
-    # Experiment: overfit one batch
-    x, y = next(iter(train_dl))
-    print(x.shape)
-    print(y.shape)
     # create the model and move model, x, y to the GPU device
     model = GPT2(toyconfig)
-    x = x.to(device)
-    y = y.to(device)
     model.to(device)
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
@@ -80,9 +77,13 @@ def main():
 
     model.train() # todo: what does .train() do?
     for i in range(steps):
+        x,y = next(iter(train_dl))
+        x = x.to(device)
+        y = y.to(device)
         # Forward and Backward Path
-        _, loss = model.forward(x, y)
+        # !! start with zero gradients
         optimizer.zero_grad()
+        _, loss = model(x, y)
         loss.backward()
         optimizer.step()
 
@@ -94,9 +95,9 @@ def main():
                 best_valid_loss = eval_loss
             # Log to SwanLab
             swanlab.log({
-                "train_loss": loss.item(),
-                "valid_loss": eval_loss,
-                "best_valid_loss": best_valid_loss,
+                "Loss/train_loss": loss.item(),
+                "Loss/valid_loss": eval_loss,
+                "Loss/best_valid_loss": best_valid_loss,
                 "elapsed_time": elapsed_time,
                 "learning_rate": toyconfig.learning_rate
             }, step=i)  # Step = current iteration

@@ -37,8 +37,8 @@ class ModelConfig:
 # Here is the config for HuggingFace GPT2 124M param model
 @dataclass(frozen=True)
 class GPT2DataConfig:
-    batch_size: int = 64
-    block_size: int = 1024
+    batch_size: int = 4 # 64
+    block_size: int = 32 # 1024
     shakes_text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     shuffle: bool = True
     seed: int = 1337
