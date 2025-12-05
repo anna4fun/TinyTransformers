@@ -87,7 +87,7 @@ def main():
         loss.backward()
         optimizer.step()
 
-        if i % log_every == 0:
+        if i == 0 or i % log_every == 9:
             eval_loss = evaluate(model, valid_dl, device)
             elapsed_time = time.time() - start_time  # Time since start
             # Update the best validation loss
