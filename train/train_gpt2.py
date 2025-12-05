@@ -43,10 +43,10 @@ def main():
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-wte-lm_head-share-weights",
+        experiment_name="gpt2-shakespeare-v1-with-GPT2-initialization",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
-        description = "GPT-2 124M experiment training on Shakespeare text (custom learning rate)",
+        description = "GPT-2 124M experiment training on Shakespeare text",
         tags = ["GPT2", "Experiment", "Shakespeare", "small dataset"],
     )
 

@@ -13,7 +13,10 @@ class MLP(nn.Module):
         self.c_fc = nn.Linear(config.n_embd, config.n_embd*4)
         # gelu: G for Gaussian, replace the 0 part of Relu to be waves of Tan
         self.gelu = nn.GELU(approximate='tanh')
+        # output projection
         self.c_proj = nn.Linear(config.n_embd*4, config.n_embd)
+        ## attach the flag for residual stream std scaling
+        self.c_proj.TINYGPT_SCALE_INIT = 1
 
     def forward(self, x):
         x = self.c_fc(x)
@@ -27,7 +30,10 @@ class CausalSelfAttention(nn.Module):
         # c_attn is a concatenation of the **weights**  of Q,K,V, each is of dim (n_embd, n_embd)
         # (c_attn) weight Q, K, V will project x to difference subspaces, and we will need c_proj to project them back to x's original space
         self.c_attn = nn.Linear(config.n_embd, config.n_embd*3)
+        # output projection
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
+        ## attach the flag for residual stream std scaling
+        self.c_proj.TINYGPT_SCALE_INIT = 1
         self.n_head = config.n_head
         self.n_embd = config.n_embd
         # bias is of dim (1, 1, T, T) (not (B, nh, T, T))
@@ -80,6 +86,7 @@ class Block(nn.Module):
         self.mlp = MLP(config) # Feed Forward
 
     def forward(self, x):
+        # there are 2 residual streams in each block
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
         return x
@@ -105,15 +112,21 @@ class GPT2(nn.Module):
         # the classifier that project next word prediction from embedding vector into tokens in the vocabulary
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         # Efficiency Trick 1: make token embedding use the lm_head weights, 30% parameters saved
+        ## the wte is initialized twice with std = 0.02
         self.transformer.wte.weight = self.lm_head.weight
         # Initialize parameters with the _init_weights function
         self.apply(self._init_weights)
 
-    # Initialize parameters
+    # Initialize parameters with N(0,0.02)
     def _init_weights(self, module):
         # keep the LayerNorm the default
         if isinstance(module, nn.Linear):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02) # 0.02 align with Xavier initialization default of 1/sqrt(768)=0.03 and 1/sqrt(1600)=0.025
+            # Std control Trick 1: scale down std from 1 into 1/sqrt(n_embd), so every token's std is always 1.
+            std = 0.02 # 0.02 align with Xavier initialization default of 1/sqrt(768)=0.03 and 1/sqrt(1600)=0.025
+            if hasattr(module, 'TINYGPT_SCALE_INIT'):
+                # Std control Trick 2: scale down the std by 1/sqrt(the number of residual layers) - GPT2
+                std *= (2 * self.config.n_layer) **-0.5 # 2 represents the 2 residual pathways in the block(attn and mlp)
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
             if module.bias is not None:
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
