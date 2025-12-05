@@ -71,7 +71,6 @@ class CausalSelfAttention(nn.Module):
         y = self.c_proj(y)
         return y
 
-
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -105,6 +104,20 @@ class GPT2(nn.Module):
         )
         # the classifier that project next word prediction from embedding vector into tokens in the vocabulary
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        # Efficiency Trick 1: make token embedding use the lm_head weights, 30% parameters saved
+        self.transformer.wte.weight = self.lm_head.weight
+        # Initialize parameters with the _init_weights function
+        self.apply(self._init_weights)
+
+    # Initialize parameters
+    def _init_weights(self, module):
+        # keep the LayerNorm the default
+        if isinstance(module, nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02) # 0.02 align with Xavier initialization default of 1/sqrt(768)=0.03 and 1/sqrt(1600)=0.025
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     # Forward is just an implementation of the Decoder architecture of the attention paper figure 2
     def forward(self, idx, targets=None):
