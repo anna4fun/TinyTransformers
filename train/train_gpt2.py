@@ -56,6 +56,10 @@ def main():
     dl = make_dataloader(toyconfig)
     train_dl = dl["train_dl"]
     valid_dl = dl["valid_dl"]
+    # Applies TensorFloat32 operation only to CUDA matrix multiplication operations
+    # TF32 is the precision-reduced variant of FP32, but not half-precision(FP16/BF16)
+    # It is a specialized 19-bit floating-point format designed by NVIDIA for accelerating AI workloads, distinct from both 32-bit single-precision (FP32) and 16-bit half-precision (FP16/BF16) formats
+    torch.set_float32_matmul_precision('high')
     # create the model and move model, x, y to the GPU device
     model = GPT2(toyconfig)
     model.to(device)
@@ -77,6 +81,7 @@ def main():
 
     model.train() # todo: what does .train() do?
     for i in range(steps):
+        t0 = time.time() # current time in seconds since the Unix epoch
         x,y = next(iter(train_dl))
         x = x.to(device)
         y = y.to(device)
@@ -87,9 +92,21 @@ def main():
         loss.backward()
         optimizer.step()
 
+        # The synchronize function blocks the CPU thread until all pending MPS operations finish executing on the GPU
+        if device =="cuda":
+            torch.cuda.synchronize(device)
+        elif device == "mps":
+            torch.mps.synchronize()
+        # CPU requires no synchronization (operations are synchronous by default)
+        t1 = time.time()
+        dt = t1- t0 # time difference in seconds
+        # tokens per seconds
+        B, T = x.shape
+        token_per_sec = (B*T)/dt
+
         if i == 0 or i % log_every == 9:
             eval_loss = evaluate(model, valid_dl, device)
-            elapsed_time = time.time() - start_time  # Time since start
+            elapsed_time = time.time() - start_time  # Time since start in seconds
             # Update the best validation loss
             if eval_loss < best_valid_loss:
                 best_valid_loss = eval_loss
@@ -98,7 +115,8 @@ def main():
                 "Loss/train_loss": loss.item(),
                 "Loss/valid_loss": eval_loss,
                 "Loss/best_valid_loss": best_valid_loss,
-                "elapsed_time": elapsed_time,
+                "Time/current_iteration_time": dt,
+                "Time/token_per_sec": token_per_sec,
                 "learning_rate": toyconfig.learning_rate
             }, step=i)  # Step = current iteration
 
