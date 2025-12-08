@@ -34,17 +34,17 @@ def main():
         device="cuda"
     elif torch.backends.mps.is_available():
         device="mps"
-    print(device)
 
     # ----------------------
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
     toyconfig = GPT2DataConfig()
     config_dict = dataclasses.asdict(toyconfig)
+    config_dict["device"] = device
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-with-BF16",
+        experiment_name="gpt2-shakespeare-v1-Compile-with-BF16",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",
@@ -64,6 +64,15 @@ def main():
     # create the model and move model, x, y to the GPU device
     model = GPT2(toyconfig)
     model.to(device)
+    # Compile model speed up training, compilation itself consume some time
+    # Efficiency gain comes from reducing Python overhead and GPU R/W
+    ## note: compile is default, unless you are debugging and want to save compile time
+    # Due to incompatibility of torch.compile() for MPS devices, only allow it for GPU devices.
+    if device=="cuda":
+        t0 = time.time()
+        model = torch.compile(model)
+        compile_time = time.time() - t0
+        swanlab.log({"model_compile_time": compile_time})
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
     optimizer = torch.optim.AdamW(model.parameters(), lr=toyconfig.learning_rate)
