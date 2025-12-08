@@ -1,3 +1,4 @@
+import code
 import dataclasses
 import time
 
@@ -43,7 +44,7 @@ def main():
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-with-GPT2-initialization",
+        experiment_name="gpt2-shakespeare-v1-with-BF16",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",
@@ -87,8 +88,14 @@ def main():
         y = y.to(device)
         # Forward and Backward Path
         # !! start with zero gradients
+        # todo: where exactly shall I put the optimizer.zero_grad(): before or after loss.backward()?
         optimizer.zero_grad()
-        _, loss = model(x, y)
+        # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
+        with torch.autocast(device_type = device,dtype=torch.bfloat16):
+            logits, loss = model(x, y)
+            # Pause training to inspect state, eg. the precision of logits should show float16, while wte.weights are float32
+            # code.interact(local=locals())
+        # Exit autocast before the backward path
         loss.backward()
         optimizer.step()
 
