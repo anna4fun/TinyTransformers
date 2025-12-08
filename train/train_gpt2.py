@@ -120,6 +120,12 @@ def main():
         # tokens per seconds
         B, T = x.shape
         token_per_sec = (B*T)/dt
+        # log running time and train loss every iteration
+        swanlab.log({
+            "Loss/train_loss": loss.item(),
+            "Time/current_iteration_time": dt,
+            "Time/token_per_sec": token_per_sec,
+        }, step=i)
 
         if i == 0 or i % log_every == 9:
             eval_loss = evaluate(model, valid_dl, device)
@@ -127,15 +133,11 @@ def main():
             # Update the best validation loss
             if eval_loss < best_valid_loss:
                 best_valid_loss = eval_loss
-            # Log to SwanLab
+            # Log train and validation loss
             swanlab.log({
-                "Loss/train_loss": loss.item(),
                 "Loss/valid_loss": eval_loss,
                 "Loss/best_valid_loss": best_valid_loss,
-                "Time/current_iteration_time": dt,
-                "Time/token_per_sec": token_per_sec,
-                "learning_rate": toyconfig.learning_rate
-            }, step=i)  # Step = current iteration
+            }, step=i)
 
     # ----------------------
     # 6. Final Logging
