@@ -88,11 +88,12 @@ def main():
     # ----------------------
     steps = 50
     log_every = 10
-
+    train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
     for i in range(steps):
         t0 = time.time() # current time in seconds since the Unix epoch
-        x,y = next(iter(train_dl))
+        # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which reinitializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
+        x, y = next(train_iter)
         x = x.to(device)
         y = y.to(device)
         # Forward and Backward Path
