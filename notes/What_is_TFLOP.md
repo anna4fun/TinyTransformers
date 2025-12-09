@@ -1,7 +1,7 @@
 **TFLOPS** stands for **Tera Floating-Point Operations Per Second**, a key metric used to measure the **computational performance** of hardware (e.g., GPUs, TPUs, CPUs) — especially for tasks that rely heavily on floating-point arithmetic, like training and inference of language models, deep learning, scientific simulations, and 3D rendering.
 
 ### Breakdown of the Term
-1. **Tera (T)**: A prefix representing \(10^{12}\) (one trillion) operations.
+1. **Tera (T)**: A prefix representing $(10^{12})$ (one trillion) operations.
 2. **Floating-Point Operations (FLOPs)**: A calculation involving real numbers with decimal points (e.g., addition, subtraction, multiplication, division of floats like `3.1415` or `1.2e-5`). These are the core operations in deep learning (e.g., matrix multiplications in neural network layers).
 3. **Per Second**: The rate at which these operations are executed.
 
@@ -9,6 +9,7 @@ So, **1 TFLOPS = 1 trillion floating-point operations per second**.
 
 ### Key Distinctions
 There are two common variants of TFLOPS that matter for model training:
+
 | Type | Full Name | Use Case | Example |
 |------|-----------|----------|---------|
 | **FP32 TFLOPS** | 32-bit floating-point TFLOPS | Reference performance for traditional ML workloads | An NVIDIA A100 GPU has ~19.5 FP32 TFLOPS. |
