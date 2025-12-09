@@ -18,7 +18,7 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
 8. The Efficiency tricks
    9. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
    10. Cut precision when possible -> Mixed Precision of float32 and float16 
-   11. Set all hyperparameters to be powers of 2, because this is how CUDA works
+   11. Set all hyperparameters to be powers of 2, because this is CUDA works with chunks of 32 and 64, so making our parameters in the same way is a better utilization of GPU resources.
 8. The Evaluation
 9. Deployment
 
@@ -39,6 +39,7 @@ Possible reason is that my batch is to small (B = 4, T = 32), so the efficiency 
 
 **2025/12/09**
 Implementing FlashAttention achieved 13% decrease in total training time (baseline 30mins -> 26mins).
+Changing vocab_size from an odd number(50257) to the powers of 2(50304) in theory should make training 3x faster, yet with the small data on my MPS this efficiency doesn't show up at all.
 
 ## Blogs:
 ### Attention is All You Need readout
