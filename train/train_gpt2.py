@@ -38,7 +38,7 @@ def main():
     # ----------------------
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
-    toyconfig = GPT2DataConfig()
+    toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=4, block_size=32)
     config_dict = dataclasses.asdict(toyconfig)
     config_dict["device"] = device
     # Initialize SwanLab

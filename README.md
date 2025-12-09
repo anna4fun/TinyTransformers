@@ -18,7 +18,7 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
 8. The Efficiency tricks
    9. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
    10. Cut precision when possible -> Mixed Precision of float32 and float16 
-   11. (dumbest and brilliant) Set all hyperparameters to be powers of 2.
+   11. Set all hyperparameters to be powers of 2, because this is how CUDA works
 8. The Evaluation
 9. Deployment
 
