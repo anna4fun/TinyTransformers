@@ -44,7 +44,7 @@ def main():
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-Compile-with-BF16",
+        experiment_name="gpt2-shakespeare-v1-FlashAttention",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",

@@ -1,7 +1,44 @@
 # Build a Tiny Transformers (GPT2)
-This repository contains my code and notes for implementing a tiny decoder only transformers, 
+This repository contains my code and notes for implementing a tiny decoder only transformers(GPT2), 
 following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s). 
 This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture)
+
+
+## High Level Architecture of GPT2 Model and Training
+1. The GPT2 Language Model
+   2. Byte-pair encoding tokenization
+   3. Build contextual embedding with the attention mechanism
+   3. The transformer block data flow: idx -> token+positional embedding -> 12 layers of Block (Attention + MLP + LayerNorm)  -> Final layer norm -> projection back to vocabulary space -> softmax for next token prediction
+4. The Training
+   5. Prepare data loader
+   6. Initialize the GPT2 model parameters with down-scaled standard deviation. (#stability)
+      7. (GPT2 only) (#efficiency) token embedding share the same weights with the final projection head's weights, this aligns the distribution of inputs and outputs
+   7. (Forward) Feed sequences of data into GPT2 language model to get the logits
+   7. (Backward) Use cross-entropy loss (negative averaged log-likelihood) for gradient descent 
+8. The Efficiency tricks
+   9. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
+   10. Cut precision when possible -> Mixed Precision of float32 and float16 
+   11. (dumbest and brilliant) Set all hyperparameters to be powers of 2.
+8. The Evaluation
+9. Deployment
+
+## Daily training observations
+**2025/12/03**
+With the Experiment Config (small layers and n_embd) Overfit a single batch of data would land the training loss and valid loss both to 9. 
+Iterate over 50 batches doesn't change the loss too much. The loss indicates underfitting.
+What make a difference was to switch to the GPT2DataConfig (with bigger n_embd,  n_layers), the valid loss goes to 6.8, much better. Total training takes 24 mins which is very slow.
+
+**2025/12/05**
+Add the GPT2 (1) weight sharing scheme between token embedding weights and the lm_head weights and (2) initialization tricks.
+(1) improved training efficiency by reducing the number of parameters to be trained by 30% (size of wte is 768*50257= 38M, which is 38M/124M = 30% of the 124M parameters). However the total training time increased and the valid loss also increased a little bit.
+(2) initialization tricks does decrease the loss a little bit
+
+**2025/12/08**
+Implementing the mixed precision (TF32 and BF16) and kernel fusion(torch.compile) doesn't speed up the training at all. 
+Possible reason is that my batch is to small (B = 4, T = 32), so the efficiency tricks cannot make a difference.
+
+**2025/12/09**
+Implementing FlashAttention achieved 13% decrease in total training time (baseline 30mins -> 26mins).
 
 ## Blogs:
 ### Attention is All You Need readout

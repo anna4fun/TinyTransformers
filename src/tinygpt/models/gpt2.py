@@ -57,7 +57,7 @@ class CausalSelfAttention(nn.Module):
         q = q.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
         k = k.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C//self.n_head).transpose(1, 2) # (B, nh, T, hs)
-
+        """
         ## Attention
         # blob 1: attention weights
         attn = q @ k.transpose(2,3) * (1.0 / math.sqrt(k.size(-1))) # (B, nh, T, T), **1.0** not 1
@@ -70,6 +70,9 @@ class CausalSelfAttention(nn.Module):
 
         # blob 2: contextual embedding
         y = attn @ v  # (B, nh, T, T) * (B, nh, T, hs) -> (B, nh, T, hs)
+        """
+        # Replace handwritten attention with FlashAttention
+        y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         # swap the dimensions back to (B, T, nh, hs) and transform (nh, hs) back to (C)
         # calling .contiguous() makes a contiguous copy so view can safely collapse the last two dims.
         y = y.transpose(1, 2).contiguous().view(B, T, C) # (B, T, C)
