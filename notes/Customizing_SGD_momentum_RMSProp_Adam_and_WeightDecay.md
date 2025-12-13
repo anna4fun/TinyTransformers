@@ -6,6 +6,8 @@ $$ weights \mathrel{-}= learning\_rate \times weights.gradient $$
 The $learning\_rate$ is a fixed number and same for all dimensions of the weights vector and $weights.gradient$ is determined solely on one point of the weight vector.
 
 (TODO: common problems of Vanilla SGD)
+1. An exploding gradient and a fixed learning rate would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient and a fixed learning rate would not make effective changes to the parameter. Both cases slow down the training.
+2. 
 
 We can make these 2 components to adapt to different points and steps of the training process, here's a few tricks:
 
@@ -19,12 +21,14 @@ Note that we should record the average of each dimension of the weights vector a
 rather than averaging all the dimensions of the weights vector (that's more like a normalization).
 
 ## 2. RMSProp to prevent vanishing and exploding step size
+### Rationale
 RMSProp improves the vanilla SGD by allowing each parameter of the weights vector get its own $learning_rate$ controlled by a global $lr$,
-so that the step size of all the parameters would have roughly similar magnitude, even when gradients vary drastically across parameters and iterations.
+so that the step size of all the parameters would have roughly similar magnitude(close to the global learning_rate), even when gradients vary drastically across parameters and iterations.
 
+(TODO) across iteration and parameters
+- gradients fluctuate by mini-batch data seen in different iterations
+- gradients changes differently between different layers of the NN
 
-
-Parameters that needs updates a lot get a bigger `lr` while the ones that are good enough gets a small one.
 We shall observe consistent near-zero gradients for the former one and highly fluctuated gradients for the later case,
 personally I think this is a bit counterintuitive, mostly due to the fact that a consistent close to zero gradients could also indicate this dimension has reached to global minimum, 
 meaning it doesn't need to be updated further.
@@ -44,12 +48,22 @@ Since the moving weighted average of the squared gradients sits in the denominat
 1. if a parameter(a dimension of the weight vector) has a tiny moving average of gradients in the past few steps(indicating it was trapped at a local minimum or well optimized), we shall make its step size to be larger than the vanilla SGD. Note that since the `weights.gradient` is small, the adjusted step size won't be very huge. 
 2. on the other hand, if a parameter has a big moving average of gradients in the past few steps(indicating this parameter is jumping everywhere, possibly diverging), let's decrease the step size to keep the updates stable.
 
+(TODO) Does $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}}$ equal to 1? If so, then each parameter would only change 1 by each iteration? then what's the point of feeding gradients? "so no single parameter’s update dominates the training process."?
+
+
+
 This is the genius of RMSProp: it decouples "gradient magnitude" from "step size stability"—so neither parameter dominates the update process, and both converge at a reasonable rate.
 Noted the $eps$ is to prevent zero denominator, it's usually 1e-8. By convention, $alpha = 0.99$.
 
 
 
-
+## One liner for gradient vanishing/exploding problem
+If gradients are truly zero (eg. sigmoid loss function saturation), the SGD customizing techniques cannot create non-zero gradients out of thin air.
+Instead we need architectural changes such as 
+- Better initialization(Kaiming, Xavier) to control the gradient's standard deviation in a proper range
+- Better activation functions (Leaky Relu)
+- Residual pathways
+- Normalizations: layer norm
 
 
 
