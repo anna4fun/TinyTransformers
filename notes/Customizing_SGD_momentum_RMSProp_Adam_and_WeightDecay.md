@@ -47,7 +47,7 @@ Since the moving weighted average of the squared gradients sits in the denominat
 
 
 ## The Key to RMSProp
-Does $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}}$ equal to 1? If so, then each parameter would only step the global learning rate by each iteration? then what's the point of feeding gradients? 
+Does $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}}$ equal to 1? If so, then each parameter would only step the global learning rate by each iteration? Then what's the point of feeding gradients? 
 
 For the 1st question, let's revisit the 
 $$ weights\_grad\_squared\_avg_{(t)} = \alpha \times weights\_grad\_squared\_avg_{(t-1)} + (1-\alpha) \times weights\_grad_{(t)}^2 $$

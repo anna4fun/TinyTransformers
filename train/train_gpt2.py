@@ -75,7 +75,8 @@ def main():
         swanlab.log({"model_compile_time": compile_time})
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
-    optimizer = torch.optim.AdamW(model.parameters(), lr=toyconfig.learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=toyconfig.learning_rate,
+                                  betas=(0.9, 0.95), eps=1e-8)
 
     # ----------------------
     # 4. Training Tracking Variables
@@ -86,7 +87,7 @@ def main():
     # ----------------------
     # 5. Training Loop
     # ----------------------
-    steps = 50
+    steps = 20
     log_every = 10
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
@@ -106,7 +107,12 @@ def main():
             # Pause training to inspect state, eg. the precision of logits should show float16, while wte.weights are float32
             # code.interact(local=locals())
         # Exit autocast before the backward path
+
+        # The backward path
         loss.backward()
+        # Clip the global norm of the gradients at 1.0 (GPT3)
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        # Update the parameters: this is essentially p -= lr*gradients
         optimizer.step()
 
         # The synchronize function blocks the CPU thread until all pending MPS operations finish executing on the GPU
@@ -125,6 +131,7 @@ def main():
             "Loss/train_loss": loss.item(),
             "Time/current_iteration_time": dt,
             "Time/token_per_sec": token_per_sec,
+            "Norm": round(norm.item(), 6),
         }, step=i)
 
         if i == 0 or i % log_every == 9:
