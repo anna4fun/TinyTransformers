@@ -1,4 +1,4 @@
-# Customizing the SGD Optimizer to Make Training Faster
+# Variations of the SGD Optimizer that Makes Training Faster
 
 To recap, the vanilla SGD optimizer update the parameters' weight with the following formula
 $$ weights \mathrel{-}= learning\_rate \times weights.gradient $$
@@ -7,37 +7,39 @@ Here, the $learning\_rate$ is a fixed number and same for all dimensions of the 
 
 Vanilla SGD is vulnerable w.r.t gradient fluctuations. An exploding gradient(e.g. weight.gradient > $10^2$) would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient would not make effective changes to the parameter. Both cases slow down the training.
 
-We can make these 2 components to adapt to different points and steps of the training process, here's a few tricks:
+We can make a few changes to the SGD Optimizer to make it adapt to different points and steps of the training process, here's a few tricks:
 
 ## 1. Momentum
-Refine $weights.gradient$ with moving averages of $weights.gradient$, the formula becomes:
+Momentum simply refines $weights.gradient$ with moving averages of $weights.gradient$, changing the weights update formula to be:
 $$ weights\_gradient\_avg_{t} = \beta \times weights\_gradient\_avg_{t-1} + (1-\beta) \times weights.gradient_{t} $$
 $$ weights \mathrel{-}= learning\_rate \times weights\_gradient\_avg $$
 
-The moving average of gradients maintain "inertia" in the direction of consistent gradient signals (e.g., if gradients for a dimension is consistently positive, momentum amplifies this direction to speed convergence). 
-It can effectively prevent the training to be stuck at a local minimum (that have 0 gradients).
-Note that we should record the average of each dimension of the gradient vector and update each dimension of the weight accordingly, 
-rather than averaging all the dimensions of the weights vector (that's more like a normalization which computes a unified statistic across all dimensions).
+$\beta$ is usually 0.9, meaning the effect of the gradient at any step will decay to near zero after around 50 steps.
 
+Momentum has 2 main benefits:
+1. it maintains inertia in the direction of consistent gradient signals (e.g., if gradients for a dimension are consistently positive, momentum amplifies this direction to accelerate convergence). 
+2. it can effectively prevent the training to be stuck at a local minimum (that have 0 gradients).
 
+However, momentum also has it's inherit limitations: it struggles with erratic gradient directions.
 
 ## 2. RMSProp to prevent vanishing and exploding step size
 ### 2.1 Rationale
-RMSProp improves the vanilla SGD by allowing each parameter of the weights vector to update with step size that is stabilized by the gradient volatility.
-
-Each parameter get its own $learning_rate$ controlled by a global $lr$, even when gradients vary drastically across parameters and iterations.
+During training, gradients vary drastically across parameters and iterations, here are 2 examples:
 - Gradients of the same parameter fluctuate drastically due to "seeing" different mini-batch data in different iterations
-- Gradients of different parameters changes differently due to their position in the deep neural network, eg. earlier layers changes less than later layers
+- Gradients of different parameters changes differently due to their position in the deep neural network, eg. earlier layers change less than later layers
+
+These gradient instabilities give rise to vanishing or exploding step sizes, which introduce a "shock" to model training that can halt the training process entirely in the worst-case scenarios.
+RMSProp improves the vanilla SGD by allowing each parameter in the weights vector to update with a step size that is stabilized by the gradient's volatility.
 
 
 ### 2.2 The Math
-The core formula of RMSProp is to assign smaller learning rates for parameters with very large gradients^2 by dividing the global learning rate by the gradients^2, 
-and vice versa for parameters with small gradients^2. To make alignment across iterations, RMSProp introduce 
-the moving weighted average of the square of the gradients at each step to calibrate multiple iterations of signals:
-$$ weights\_grad\_squared\_avg_{(t)} = \alpha \times weights\_grad\_squared\_avg_{(t-1)} + (1-\alpha) \times weights\_grad_{(t)}^2 $$
-the $\alpha$ control how much historical gradient's squared average should be considered at the current step.
+The core formula of RMSProp is to divide the global learning rate by a transformation of $gradient^2$, which makes the step size smaller for parameters with very large gradients 
+and vice versa for those with small gradients. To ensure consistency across iterations, RMSProp introduces 
+a moving weighted average of $gradient^2$ at each step to aggregates gradient signals over multiple iterations:
+$$ weights\_grad\_squared\_avg_{(t)} = \alpha \times weights\_grad\_squared\_avg_{(t-1)} + (1-\alpha) \times gradient_{(t)}^2 $$
+the $\alpha$ control how much historical $gradient^2$ weighted average should be considered at the current step.
 
-At step $t=1$, $ weights\_grad\_squared\_avg_{(1)} = (1-\alpha) \times weights\_grad_{(1)}^2$
+At step $t=1$, $ weights\_grad\_squared\_avg_{(1)} = (1-\alpha) \times gradient_{(1)}^2$
 
 And we adjust the vanilla SGD with the 
 $$ weights \mathrel{-}=  \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} \times learning\_rate $$
@@ -53,17 +55,17 @@ Does $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}}$ equal
 For the 1st question, let's revisit the 
 $$ weights\_grad\_squared\_avg_{(t)} = \alpha \times weights\_grad\_squared\_avg_{(t-1)} + (1-\alpha) \times weights\_grad_{(t)}^2 $$
 
-Let's start with a perfect scenario example: if $weights\_grad_{(t)}$ is roughly the same for the past few iterations,
-then $weights\_grad\_squared\_avg_{(t-1)} = weights\_grad_{(t)}^2$, if $\alpha=0.5$ then $\sqrt{weights\_grad\_squared\_avg_{(t)}}$ also close to $weights\_grad_{(t)}$
+Let's start with a perfect scenario example: if $weights\_grad_{(t)}$ is the same for the past few iterations,
+then $weights\_grad\_squared\_avg_{(t-1)} = weights\_grad_{(t)}^2$, if $\alpha=0.5$ then $weights\_grad\_squared\_avg_{(t)} = weights\_grad_{(t)}^2$
 finally leading to 
-$$ weights \mathrel{-}=  \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} \times learning\_rate = +- 1 \times learning\_rate $$
+$$ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} \times learning\_rate = \pm 1 \times learning\_rate $$
 
-Here, $+-1$ reviles one of the critical things that gradients control: the direction of the updates. (which is one of the points to feed gradient into step size)
+Here, $\pm1$ reviles one of the critical things that gradients control: the direction of the updates.
 
-By convention $alpha = 0.99$, so if the $weights\_grad_{(t)}$ is stable for the past few iterations then $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} = 1$,
-but if $weights\_grad_{(t)}$ suddenly spike up then the fraction would deviate from 1 (but not too much) and the next few iterations would make the fraction return to near 1 magnitude.
+By convention $alpha = 0.99$, so if the $weights\_grad_{(t)}$ is stable for the past few iterations then $ \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} \approx \pm1$,
+but if $weights\_grad_{(t)}$ suddenly spike up then the fraction would deviate from $\pm1$ (but not too much) and the next few iterations would make the fraction return to near 1 magnitude.
 
-This is the genius of RMSProp: it decouples "gradient magnitude" from "step size stability"—so neither parameter dominates the update process, and both converge at a reasonable rate.
+This is the genius of RMSProp: it decouples "gradient magnitude" from "step size stability"—so neither parameter dominates the update process, and converge at a reasonable rate.
 
 ## 3. Adam
 Now that we know momentum adjust step size with moving average of gradients to amplify a constant direction for update and RMSProp stabilize step size by dividing the moving average of gradients.
@@ -84,6 +86,11 @@ Normally $(\beta1, \beta2, \epsilon) = (0.9, 0.999, 1e-8) $
 
 ## 4. AdamW
 
+## Coding tips
+
+1. Momentum: we should record the average of each dimension of the gradient vector and update each dimension of the weight accordingly, 
+rather than averaging all the dimensions of the weights vector (that's more like a normalization which computes a unified statistic across all dimensions).
+
 
 ## Appendix: 
 ### 1. Causes and solutions with gradient vanishing and exploding
@@ -95,5 +102,20 @@ Normally $(\beta1, \beta2, \epsilon) = (0.9, 0.999, 1e-8) $
 ### 2. Gradient Norm Clipping 
 After gradient is precomputed(stored in `param.grad`) with `loss.backward()`, apply the Norm Clipping to cap the gradients vector.
 Gradients clipping is not part of the optimizer, because the optimizer DOES NOT modify the gradients it only modifies the parameters/weights.
+
+### 3. Connections between Weight Decay and L2 Regularization 
+As the name speaks for itself, weight decay simply means that the **weight** is decayed by some factor. 
+In the case of vanilla SGD, weight decay is as simple as:
+
+$$ new\_w = w - lr \cdot grad - decay \cdot lr \cdot w $$
+
+This is the same as L2 regularization that penalize weights on loss function:
+
+$$ loss = y\_gt - w\Tx - w^2 $$
+
+### 4. Gradients memory length is determined by the $0.9^n$  
+![0_9_power_n_plot_english.png](../pictures/0_9_power_n_plot_english.png)
+
+
 
 
