@@ -5,7 +5,7 @@ $$ weights \mathrel{-}= learning\_rate \times weights.gradient $$
 
 Here, the $learning\_rate$ is a fixed number and same for all dimensions of the weights vector and $weights.gradient$ is determined solely on one point of the weight vector.
 
-Vanilla SGD is vulnerable w.r.t gradient fluctuations. An exploding gradient(e.g. weight.gradient > $10^2$) would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient would not make effective changes to the parameter. Both cases slow down the training.
+Vanilla SGD is vulnerable w.r.t gradient fluctuations. An exploding gradient(e.g. weight.gradient > $10^2$) would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient in saddle points would not make effective changes to the parameter. Both cases slow down the training.
 
 We can make a few changes to the SGD Optimizer to make it adapt to different points and steps of the training process, here's a few tricks:
 
@@ -20,7 +20,10 @@ Momentum has 2 main benefits:
 1. it maintains inertia in the direction of consistent gradient signals (e.g., if gradients for a dimension are consistently positive, momentum amplifies this direction to accelerate convergence). 
 2. it can effectively prevent the training to be stuck at a local minimum (that have 0 gradients).
 
-However, momentum also has it's inherit limitations: it struggles with erratic gradient directions.
+However, momentum also has it's inherit limitations: it struggles with erratic gradient directions, where the gradient goes down in one step but going back up in the next step. 
+This zigzag movement is pretty common due to high-dimensional parameter space, noisy mini-batch, non-convex loss landscape (e.g. saddle points and valleys) and sparse gradients in embedding training where only a small subset of the parameters have a non-zero gradients.
+
+Adaptive step sizes and gradients smoothing algorithms such as RMSProp and Adam are designed to tackle this problem.
 
 ## 2. RMSProp to prevent vanishing and exploding step size
 ### 2.1 Rationale
@@ -41,7 +44,7 @@ the $\alpha$ control how much historical $gradient^2$ weighted average should be
 
 At step $t=1$, $ weights\_grad\_squared\_avg_{(1)} = (1-\alpha) \times gradient_{(1)}^2$
 
-And we adjust the vanilla SGD with the 
+And we change the vanilla SGD into 
 $$ weights \mathrel{-}=  \frac{weights.gradient} {\sqrt{weights\_grad\_squared\_avg + eps}} \times learning\_rate $$
 Since the moving weighted average of the squared gradients sits in the denominator, it will enable:
 1. if a parameter(a dimension of the weight vector) has a tiny moving average of gradients in the past few steps(indicating it was trapped at a local minimum or well optimized), we shall make its step size to be larger than the vanilla SGD. Note that since the `weights.gradient` is small, the adjusted step size won't be very huge. 
@@ -68,23 +71,29 @@ but if $weights\_grad_{(t)}$ suddenly spike up then the fraction would deviate f
 This is the genius of RMSProp: it decouples "gradient magnitude" from "step size stability"—so neither parameter dominates the update process, and converge at a reasonable rate.
 
 ## 3. Adam
-Now that we know momentum adjust step size with moving average of gradients to amplify a constant direction for update and RMSProp stabilize step size by dividing the moving average of gradients.
-Adam just combine both methodologies, the update step became:
+Adam (Adaptive Moment Estimation) represents a sophisticated synthesis between momentum and RMSProp,
+the update step is a simple combination of the two:
 ```
 # beta1 is the momentum parameter, beta2 is the RMSProp parameter
+# Momentum
 w_g_avg = beta1 * w_g_avg + (1-beta1) * w.grad
 unbias_w_g_avg = w_g_avg/(1-beta1**(i+1))
+# RMSProp
 w_g_sqrt_avg = beta2 * w_g_sqrt_avg + (1-beta2) * w.grad**2
 new_w = w - lr * unbiased_w_g_avg/sqrt(w_g_sqrt_avg + eps)
 ```
+Normally $(\beta1, \beta2, \epsilon) = (0.9, 0.999, 1e-8) $.
 
 Noted for the `unbiased_w_g_avg`, if we are the i-th iteration (starting at 0), this divisor of
 $1 - \beta^{(i+1)}$ makes sure the unbiased average looks more like the gradients at
 the beginning (since beta < 1, the denominator is very quickly close to 1).
 
-Normally $(\beta1, \beta2, \epsilon) = (0.9, 0.999, 1e-8) $
+
 
 ## 4. AdamW
+
+## 5. Other Techniques: Gradient Clipping, Weight Decay and Batch Size tuning
+
 
 ## Coding tips
 
