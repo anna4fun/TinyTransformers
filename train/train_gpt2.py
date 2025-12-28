@@ -75,8 +75,7 @@ def main():
         swanlab.log({"model_compile_time": compile_time})
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
-    optimizer = torch.optim.AdamW(model.parameters(), lr=toyconfig.learning_rate,
-                                  betas=(0.9, 0.95), eps=1e-8)
+    optimizer = model.configure_optimizers(weight_decay=1e-5, learning_rate=2e-5, device=device)
 
     # ----------------------
     # 4. Training Tracking Variables
@@ -93,26 +92,26 @@ def main():
     model.train() # todo: what does .train() do?
     for i in range(steps):
         t0 = time.time() # current time in seconds since the Unix epoch
-        # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which reinitializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
+        # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which re-initializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
         x, y = next(train_iter)
         x = x.to(device)
         y = y.to(device)
         # Forward and Backward Path
         # !! start with zero gradients
-        # todo: where exactly shall I put the optimizer.zero_grad(): before or after loss.backward()?
         optimizer.zero_grad()
         # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
         with torch.autocast(device_type = device,dtype=torch.bfloat16):
             logits, loss = model(x, y)
-            # Pause training to inspect state, eg. the precision of logits should show float16, while wte.weights are float32
+            # Pause training to inspect state, e.g. the precision of logits should show float16, while wte.weights are float32
             # code.interact(local=locals())
         # Exit autocast before the backward path
 
-        # The backward path
+        # The backward path, get the raw params.grad
         loss.backward()
         # Clip the global norm of the gradients at 1.0 (GPT3)
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        # Update the parameters: this is essentially p -= lr*gradients
+        # TODO: learning rate scheduler
+        # Update the parameters: this is essentially w -= lr * w.grad()
         optimizer.step()
 
         # The synchronize function blocks the CPU thread until all pending MPS operations finish executing on the GPU

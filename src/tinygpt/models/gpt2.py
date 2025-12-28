@@ -1,4 +1,5 @@
 # train_gpt2.py
+import inspect
 import math
 import torch
 import torch.nn as nn
@@ -172,6 +173,29 @@ class GPT2(nn.Module):
             # logits.size(-1) means keeping the last dimension, the other -1 tells pytorch to infer the product of the first 2 dimensions
             loss = F.cross_entropy(logits.view(-1, logits.shape[-1]), targets.view(-1))
         return logits, loss
+
+    def configure_optimizers(self, weight_decay, learning_rate, device):
+        # 1. params that need gradients
+        param_dict = {pn:p for pn, p in self.named_parameters()}
+        param_dict = {pn:p for pn, p in param_dict.items() if p.requires_grad}
+        # 2. create an optimizer group that separates parameters need / no need weight decay
+        ## embd and matmul tensors (attention and MLP) need decay
+        ## biases and layer norms don't decay, they are all 1-D tensors
+        decay_params = [p for n,p in param_dict.items() if p.dim() >= 2]
+        nodecay_params = [p for n,p in param_dict.items() if p.dim() < 2]
+        optim_groups = [
+            {'params': decay_params, 'weight_decay': weight_decay},
+            {'params': nodecay_params, 'weight_decay': 0.0},
+        ]
+        num_decay_params = sum(p.numel() for p in decay_params) #len(decay_params)
+        num_nodecay_params = sum(p.numel() for p in nodecay_params)
+        # 3. Use fused AdamW if available
+        fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
+        use_fused = fused_available and 'cuda' in device
+        print(use_fused)
+        # GPT3 paper setup
+        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
+        return optimizer
 
     # port the params from HuggingFace gpt2 and use it to initialize our model
     # the following module is a constructor that returns the GPT object if we just give it the model type (one of the 'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl')

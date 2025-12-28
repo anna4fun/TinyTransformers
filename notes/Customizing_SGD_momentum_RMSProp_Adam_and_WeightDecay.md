@@ -1,11 +1,14 @@
 # Variations of the SGD Optimizer that Makes Training Faster
 
-To recap, the vanilla SGD optimizer update the parameters' weight with the following formula
+SGD(Stochastic Gradient Descent) is the core of optimizing the model parameters by finding the path to decrease the differences between model prediction and the true labels. 
+
+The vanilla SGD optimizer update the parameters' weight with the following formula
 $$ weights \mathrel{-}= learning\_rate \times weights.gradient $$
 
-Here, the $learning\_rate$ is a fixed number and same for all dimensions of the weights vector and $weights.gradient$ is determined solely on one point of the weight vector.
+Here, the $learning\_rate$ is a fixed number and same for all dimensions of the weights vector and $weights.gradient$ is determined solely on one batch of data.
 
-Vanilla SGD is vulnerable w.r.t gradient fluctuations. An exploding gradient(e.g. weight.gradient > $10^2$) would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient in saddle points would not make effective changes to the parameter. Both cases slow down the training.
+
+In high dimensional parameter spaces such as a transformers deep neural network, the loss landscape has a complex geometry with variations of gradients. Vanilla SGD is vulnerable w.r.t gradient fluctuations. An exploding gradient(e.g. weight.gradient > $10^2$) would let the parameter make a huge change that causes divergence. On the contrary, a near-zero gradient in saddle points would not make effective changes to the parameter. Both cases slow down the training.
 
 We can make a few changes to the SGD Optimizer to make it adapt to different points and steps of the training process, here's a few tricks:
 
@@ -94,6 +97,14 @@ the beginning (since beta < 1, the denominator is very quickly close to 1).
 
 ## 5. Other Techniques: Gradient Clipping, Weight Decay and Batch Size tuning
 
+
+### Batch size tuning
+Start with small batch size and increase overtime. This is computationally heavy, it's not an algorithmic optimization but rather a system and speed improvement.
+
+Why small to large batch size?
+
+At the beginning of the training, the model is learning very basic things: which tokens are commonly used versus which ones are not and therefore should be ignored. So the gradients from every single examples are highly correlated (they all look roughly the same because they are all telling which tokens appeared or not) and there's no difference between learning small batch size and large batch size.
+Once the basic frequent-or-not pattern has been learned by the model, it then makes sense to feed large sentences of data so that the gradients are more de-correlated, and we can learn complex patterns with statistical power.
 
 ## Coding tips
 
