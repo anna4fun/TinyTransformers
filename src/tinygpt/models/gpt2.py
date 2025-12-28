@@ -174,7 +174,7 @@ class GPT2(nn.Module):
             loss = F.cross_entropy(logits.view(-1, logits.shape[-1]), targets.view(-1))
         return logits, loss
 
-    def configure_optimizers(self, weight_decay, learning_rate, device):
+    def configure_optimizers(self, weight_decay, device):
         # 1. params that need gradients
         param_dict = {pn:p for pn, p in self.named_parameters()}
         param_dict = {pn:p for pn, p in param_dict.items() if p.requires_grad}
@@ -189,12 +189,12 @@ class GPT2(nn.Module):
         ]
         num_decay_params = sum(p.numel() for p in decay_params) #len(decay_params)
         num_nodecay_params = sum(p.numel() for p in nodecay_params)
-        # 3. Use fused AdamW if available
+        # 3. Use fused AdamW if available, kernel fusion is faster bc it's putting all params in a single core
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and 'cuda' in device
         print(use_fused)
         # GPT3 paper setup
-        optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
+        optimizer = torch.optim.AdamW(optim_groups, lr=self.config.learning_rate, betas=(0.9, 0.95), eps=1e-8)
         return optimizer
 
     # port the params from HuggingFace gpt2 and use it to initialize our model

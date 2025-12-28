@@ -7,6 +7,8 @@ from torch.multiprocessing import freeze_support
 import sys
 import swanlab
 import os
+
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tinygpt.models.gpt2 import GPT2
 from tinygpt.data_loaders.gpt2_data_loader import make_dataloader
@@ -38,13 +40,13 @@ def main():
     # ----------------------
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
-    toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=4, block_size=32)
+    toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=4, block_size=32, learning_rate = 6e-4)
     config_dict = dataclasses.asdict(toyconfig)
     config_dict["device"] = device
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-Vocab_size-power-of-2",
+        experiment_name="gpt2-shakespeare-v1-weight-decay",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",
@@ -75,7 +77,9 @@ def main():
         swanlab.log({"model_compile_time": compile_time})
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
-    optimizer = model.configure_optimizers(weight_decay=1e-5, learning_rate=2e-5, device=device)
+    optimizer = model.configure_optimizers(weight_decay=0.1, device=device)
+    # learning rate scheduler
+    scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
     # ----------------------
     # 4. Training Tracking Variables
@@ -92,25 +96,26 @@ def main():
     model.train() # todo: what does .train() do?
     for i in range(steps):
         t0 = time.time() # current time in seconds since the Unix epoch
+        # Forward and Backward Path
+        # !! start with zero gradients
+        optimizer.zero_grad()
+
+        # Load batch
         # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which re-initializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
         x, y = next(train_iter)
         x = x.to(device)
         y = y.to(device)
-        # Forward and Backward Path
-        # !! start with zero gradients
-        optimizer.zero_grad()
         # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
         with torch.autocast(device_type = device,dtype=torch.bfloat16):
             logits, loss = model(x, y)
             # Pause training to inspect state, e.g. the precision of logits should show float16, while wte.weights are float32
             # code.interact(local=locals())
         # Exit autocast before the backward path
-
-        # The backward path, get the raw params.grad
+        # The backward path, get the raw gradients and deposit them into params.grad
         loss.backward()
+
         # Clip the global norm of the gradients at 1.0 (GPT3)
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        # TODO: learning rate scheduler
         # Update the parameters: this is essentially w -= lr * w.grad()
         optimizer.step()
 
@@ -131,6 +136,7 @@ def main():
             "Time/current_iteration_time": dt,
             "Time/token_per_sec": token_per_sec,
             "Norm": round(norm.item(), 6),
+            "Learning Rate": float(scheduler.get_last_lr()[0]),
         }, step=i)
 
         if i == 0 or i % log_every == 9:
@@ -144,6 +150,8 @@ def main():
                 "Loss/valid_loss": eval_loss,
                 "Loss/best_valid_loss": best_valid_loss,
             }, step=i)
+            # TODO: debug why the learning rate doesn't change in iter = 10 and 20
+            scheduler.step()
 
     # ----------------------
     # 6. Final Logging
