@@ -40,9 +40,11 @@ def main():
     # ----------------------
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
+    # TODO: change the B and T into original size 64 and 1024
     toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=4, block_size=32, learning_rate = 6e-4)
     config_dict = dataclasses.asdict(toyconfig)
     config_dict["device"] = device
+
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
@@ -52,10 +54,14 @@ def main():
         description = "GPT-2 124M experiment training on Shakespeare text",
         tags = ["GPT2", "Experiment", "Shakespeare", "small dataset"],
     )
+    # TODO: test DDP master process verification process
+    # Logging("I am GPU", ddp_rank)
+    # import sys; sys.exit(0)
 
     # ----------------------
     # 3. Setup Data(on CPU), Model, Optimizer
     # ----------------------
+    # TODO: modify dataloader for DDP: process_rank=ddp_rank, num_processes=ddp_world_size
     dl = make_dataloader(toyconfig)
     train_dl = dl["train_dl"]
     valid_dl = dl["valid_dl"]
@@ -99,7 +105,9 @@ def main():
         # Forward and Backward Path
         # !! start with zero gradients
         optimizer.zero_grad()
-
+        # TODO: gradient accumulation, accumulate 0.5M token's of gradients every update step, remember to normalize the loss by grad_accum_steps due to "sum of average != overall average"
+        # loss_accum = 0.0; loss_accum += loss.detach() # track leave nodes
+        # for micro_step in range(grad_accum_steps):
         # Load batch
         # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which re-initializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
         x, y = next(train_iter)
@@ -111,7 +119,9 @@ def main():
             # Pause training to inspect state, e.g. the precision of logits should show float16, while wte.weights are float32
             # code.interact(local=locals())
         # Exit autocast before the backward path
-        # The backward path, get the raw gradients and deposit them into params.grad
+
+        # TODO: if ddp, only synchronize the gradients when it is the last step of the gradient accumulated batch
+        # The backward path, get the raw gradients and deposit(sum) them into params.grad
         loss.backward()
 
         # Clip the global norm of the gradients at 1.0 (GPT3)
@@ -129,6 +139,7 @@ def main():
         dt = t1- t0 # time difference in seconds
         # tokens per seconds
         B, T = x.shape
+        # TODO: adjust token_per_sec with the gradient accumulated number of tokens 0.5M
         token_per_sec = (B*T)/dt
         # log running time and train loss every iteration
         swanlab.log({
@@ -137,6 +148,7 @@ def main():
             "Time/token_per_sec": token_per_sec,
             "Norm": round(norm.item(), 6),
             "Learning Rate": float(scheduler.get_last_lr()[0]),
+            # TODO: track intermediate loss_accum
         }, step=i)
 
         if i == 0 or i % log_every == 9:
