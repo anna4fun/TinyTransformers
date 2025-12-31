@@ -49,6 +49,9 @@ Changing vocab_size from an odd number(50257) to the powers of 2(50304) in theor
 
 **2025/12/31**
 Finally setup a cloud GPU (4090D), completing the same task (B=4, T=32, 20 iterations) takes only 2.5mins, which is 5.6 times faster!
+Callout: with 24 GB VRAM, B=64 and T=1024 still triggers OOM. So I have to downsize B to 8, (without gradient accumulation), the peak GPU memory utilization is 11133MiB = 10GB, which means that B can be doubled up to 16, which will utilize 20GB, that's not exceeding the 24GB memory.
+Total training time is 19min 51s. Train loss 6.1, best and final valid loss is 6.2, no overfitting, yay! See you in 2026!
+
 
 ## Blogs:
 ### Attention is All You Need readout

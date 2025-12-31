@@ -41,14 +41,14 @@ def main():
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
     # TODO: change the B and T into original size 64 and 1024
-    toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=4, block_size=32, learning_rate = 6e-4)
+    toyconfig = GPT2DataConfig(vocab_size=50304, batch_size=8, learning_rate = 6e-4)
     config_dict = dataclasses.asdict(toyconfig)
     config_dict["device"] = device
 
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v1-weight-decay",
+        experiment_name="gpt2-shakespeare-v2-full-size-batch-trial",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",
@@ -98,7 +98,7 @@ def main():
     # ----------------------
     # 5. Training Loop
     # ----------------------
-    steps = 20
+    steps = 50
     log_every = 10
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
@@ -149,7 +149,7 @@ def main():
             "Time/current_iteration_time": dt,
             "Time/token_per_sec": token_per_sec,
             "Norm": round(norm.item(), 6),
-            "Learning Rate": float(scheduler.get_last_lr()[0]),
+            # "Learning Rate": float(scheduler.get_last_lr()[0]),
             # TODO: track intermediate loss_accum
         }, step=i)
 
