@@ -83,9 +83,11 @@ def main():
         swanlab.log({"model_compile_time": compile_time})
     # interesting: optimizer sits outside the iteration loop
     # AdamW fixes the bug of Adam
-    optimizer = model.configure_optimizers(weight_decay=0.1, device=device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=model.config.learning_rate,
+                                  betas = (0.9, 0.95) , eps=1e-8)
+    # todo: optimizer = model.configure_optimizers(weight_decay=0.1, device=device)
     # learning rate scheduler
-    scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+    # TODO: scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
 
     # ----------------------
     # 4. Training Tracking Variables
@@ -163,7 +165,7 @@ def main():
                 "Loss/best_valid_loss": best_valid_loss,
             }, step=i)
             # TODO: debug why the learning rate doesn't change in iter = 10 and 20
-            scheduler.step()
+            # scheduler.step()
 
     # ----------------------
     # 6. Final Logging

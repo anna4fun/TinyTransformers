@@ -15,11 +15,17 @@ This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-vi
       7. (GPT2 only) (#efficiency) token embedding share the same weights with the final projection head's weights, this aligns the distribution of inputs and outputs
    7. (Forward) Feed sequences of data into GPT2 language model to get the logits
    7. (Backward) Use cross-entropy loss (negative averaged log-likelihood) for gradient descent 
-8. The Efficiency tricks
+8. The Efficiency Tricks
    9. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
    10. Cut precision when possible -> Mixed Precision of float32 and float16 
    11. Set all hyperparameters to be powers of 2, because this is CUDA works with chunks of 32 and 64, so making our parameters in the same way is a better utilization of GPU resources.
-8. The Evaluation
+8. The Optimization Techniques (from GPT3 paper)
+   9. AdamW: adding momentum(2nd, 3rd derivatives) to gradient(1st derivative) descent, to make SGD go faster. (confirm: AdamW is not changing learning rate, but to change the gradients itself.)
+   10. Gradient Clipping: adding a normalization to the gradient vector. Rational: bad batch of data in the training could cause the loss to be very high, making the gradients to be very big too, causing a "shock" to the model.
+9. The Model's Output
+   9. The model output is a prediction(aka, generation) of next token given a sentence.
+   10. The output probability per token distribution contains the latent information of what's including and before the current token, it's a conditional probability distribution over all past tokens within the context window.
+9. How to Evaluate the Model
 9. Deployment
 
 ## Daily training observations
@@ -41,14 +47,16 @@ Possible reason is that my batch is to small (B = 4, T = 32), so the efficiency 
 Implementing FlashAttention achieved 13% decrease in total training time (baseline 30mins -> 26mins).
 Changing vocab_size from an odd number(50257) to the powers of 2(50304) in theory should make training 3x faster, yet with the small data on my MPS this efficiency doesn't show up at all.
 
+**2025/12/31**
+Finally setup a cloud GPU (4090D), completing the same task (B=4, T=32, 20 iterations) takes only 2.5mins, which is 5.6 times faster!
+
 ## Blogs:
 ### Attention is All You Need readout
 1. [Done] Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)
 5. [Done] where is the K, Q, V weights training happens? [link to notes](notes/Is_training_of_QKV_happens_with_training_embedding.md)
 6. Can I interpret the meaning blobs inside K, Q, V? like CNN
-4. what are the different variations of transformers, eg. for large models and small models
+4. What are the different variations of transformers, eg. for large models and small models
 2. what is residual path
-3. What is the output of transformers? A prediction(aka, generation) of next token given a sentence.
 4. Why is a blog marked fig.2 of the attention paper to be:encode as BERT and decode as GPT. 
    Short Answer: The Attention is All You Need paper Figure 2 contains an encoder and decoder connected by a cross-attention sharing of Q and K. However, none of the BERT and GPT models implemented this encoder+decoder architecture: BERT is an Encoder that is trained to look both directions of the sequence and make any position prediction, while GPT is a Decoder because it's products ChatGPT is a human chat format which naturally goes left to right sequence understanding and generation.
 
