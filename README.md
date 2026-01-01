@@ -1,6 +1,9 @@
 # Build a Tiny Transformers (GPT2)
-This repository contains my code and notes for implementing a tiny decoder only transformers(GPT2), 
-following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s). 
+This repository contains my code and notes for implementing a tiny decoder only transformers(124M GPT2).
+Training data is the FineWeb-Edu 10B tokens dataset, I used the tokenized version on [Kaggle](https://www.kaggle.com/datasets/minhthiennguyen/fineweb-edu-10bt-for-gpt2/data).
+
+Following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s)
+and [Let's reproduce GPT2]. 
 This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture)
 
 
