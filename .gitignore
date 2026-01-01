@@ -2,3 +2,5 @@
 *.iml
 *DS_Store
 .idea/*
+autodl_command
+*.npy
