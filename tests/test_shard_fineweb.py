@@ -21,8 +21,11 @@ def test_048file_legit():
     # size match
     assert npy048_ds.shape[0] == 200000000, f"ERROR: npy048_ds shape is {npy048_ds.shape}"
 
-    # convert ds into tensor and extract the first 1024 tokens
+    # convert ds into tensor and verify vocab_size
     npy048_ts = torch.tensor(npy048_ds, dtype=torch.long)
+    vocab_size = len(torch.unique(npy048_ts))
+    assert vocab_size == 49853, f"ERROR: vocab_size is {vocab_size}"
+    # 99.2% of the total GPT2 vocab size 50257
 
     # extract the first 64 for decode
     sample_tokens = npy048_ts[:64]

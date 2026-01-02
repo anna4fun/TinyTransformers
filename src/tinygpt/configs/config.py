@@ -41,7 +41,7 @@ class GPT2DataConfig:
     block_size: int = 1024
     shakes_text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     mps_fineweb_path: str = PROJECT_ROOT / "lecture_code_and_data/fineweb_edu_0048.npy"
-    gpu_audodl_fineweb_path: Path = Path("/") / "autodl-tmp/kaggle-fineweb"
+    gpu_audodl_fineweb_path: Path = Path("/root/") / "autodl-tmp/kaggle-fineweb"
     shuffle: bool = True
     seed: int = 1337
     max_iters: int = 5000
