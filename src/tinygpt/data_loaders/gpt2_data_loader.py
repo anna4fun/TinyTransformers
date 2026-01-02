@@ -79,6 +79,7 @@ class LMSequenceDataset(Dataset):
 
         if len(self.tokens) < self.block_size + 1:
             raise ValueError("Token is not enough to build 1 block")
+            # TODO: change to patch
 
     def __len__(self):
         # max starting index for generating full block sized X, Y pairs

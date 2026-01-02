@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from tinygpt.data_loaders.gpt2_data_loader import make_dataloader, load_tokens, train_valid_split
@@ -65,4 +66,12 @@ def test_gpt2_data_loader_default_x_y():
     assert torch.equal(first_x[501:520], first_y[500:519])
 
 
+if __name__ == "__main__":
+    # Run all tests in the current script
+    # -v: verbose output (optional, for clarity)
+    # -x: stop on first failure (optional)
+    exit_code = pytest.main(["-v", __file__])
 
+    # Exit with pytest's exit code (0 = all pass, 1 = some fail, 2 = internal error)
+    import sys
+    sys.exit(exit_code)

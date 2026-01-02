@@ -1,3 +1,5 @@
+import pytest
+
 from tinygpt.configs.config import GPT2DataConfig
 import torch
 from pathlib import Path
@@ -44,15 +46,15 @@ def test_048file_legit():
     assert decoded_text == "’ series and, presumably, popular as this copy is from the twelfth thousand printing. Prettily illustrated, with an illustrated cover, depicting Florence, with her lamp, tending a wounded soldier. The free front endpaper contains a an ink inscription ‘To Jane Small. In remembrance of kind attention during illness"
 
 
-# --------------------------
-# Make the script executable
-# --------------------------
 if __name__ == "__main__":
-    # Run the test when the script is called directly
-    success = test_048file_legit()
-    # Exit with non-zero code if test fails (for CI/scripting)
+    # Run all tests in the current script
+    # -v: verbose output (optional, for clarity)
+    # -x: stop on first failure (optional)
+    exit_code = pytest.main(["-v", __file__])
+
+    # Exit with pytest's exit code (0 = all pass, 1 = some fail, 2 = internal error)
     import sys
-    sys.exit(0 if success else 1)
+    sys.exit(exit_code)
 
 
 
