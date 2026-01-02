@@ -8,7 +8,7 @@ import sys
 import swanlab
 import os
 
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from tinygpt.models.gpt2 import GPT2
 from tinygpt.data_loaders.gpt2_data_loader import make_dataloader
@@ -40,20 +40,13 @@ def main():
     # ----------------------
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
-    config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate = 6e-4, device=device)
+    config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device)
     config_dict = dataclasses.asdict(config)
-
-    # Gradient Accumulations to fit GPT3 paper - GPT3 125M parameter model batch size 0.5M
-    total_batch_size = 524288 # 2**19, closest with 0.5M
-    assert total_batch_size % config.batch_size * config.block_size == 0
-    # todo: gradient_accumulation_steps = total_batch_size / (config.batch_size * config.block_size) # 32
-    # todo: delete after test
-    gradient_accumulation_steps = 2
 
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v2-gradient-accumulation",
+        experiment_name="gpt2-shakespeare-v2-LR-scheduler",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
         description = "GPT-2 124M experiment training on Shakespeare text",
@@ -70,29 +63,40 @@ def main():
     dl = make_dataloader(config)
     train_dl = dl["train_dl"]
     valid_dl = dl["valid_dl"]
+
     # Applies TensorFloat32 operation only to CUDA matrix multiplication operations
     # TF32 is the precision-reduced variant of FP32, but not half-precision(FP16/BF16)
     # It is a specialized 19-bit floating-point format designed by NVIDIA for accelerating AI workloads, distinct from both 32-bit single-precision (FP32) and 16-bit half-precision (FP16/BF16) formats
     torch.set_float32_matmul_precision('high')
-    # create the model and move model, x, y to the GPU device
+
+    # Create the model and move model to the GPU device
     model = GPT2(config)
     model.to(device)
+
     # Compile model speed up training, compilation itself consume some time
     # Efficiency gain comes from reducing Python overhead and GPU R/W
     ## note: compile is default, unless you are debugging and want to save compile time
     # Due to incompatibility of torch.compile() for MPS devices, only allow it for GPU devices.
     if device=="cuda":
-        t0 = time.time()
         model = torch.compile(model)
-        compile_time = time.time() - t0
-        swanlab.log({"model_compile_time": compile_time})
-    # interesting: optimizer sits outside the iteration loop
-    # AdamW fixes the bug of Adam
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=model.config.learning_rate,
-    #                               betas = (0.9, 0.95) , eps=1e-8)
+
+    # Gradient Accumulations to fit GPT3 paper - GPT3 125M parameter model batch size 0.5M
+    total_batch_size = 524288  # 2**19, closest with 0.5M
+    assert total_batch_size % config.batch_size * config.block_size == 0
+    # todo: gradient_accumulation_steps = total_batch_size / (config.batch_size * config.block_size) # 32
+    # todo: delete after test
+    gradient_accumulation_steps = 2
+
+    # Number of steps to go through 1 epoch
+    max_steps = 19073 # 19,073 steps is ~1 epoch, if data is 10B tokens and batch size 0.5M tokens
+    warmup_steps = 715
+
+    # Optimizer sits outside the iteration loop
+    # start with the max lr=6e-4
     optimizer = model.configure_optimizers(weight_decay=0.1, lr=model.config.learning_rate, device=device)
+
     # learning rate scheduler
-    # TODO: scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = CosineAnnealingLR(optimizer, T_max=max_steps, eta_min=model.config.learning_rate * 0.1)
 
     # ----------------------
     # 4. Training Tracking Variables
@@ -104,16 +108,17 @@ def main():
     # 5. Training Loop
     # ----------------------
     steps = 50
-    log_every = 10
+    log_every = 250
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
+    # TODO: change steps with max_step in PROD
     for i in range(steps):
         t0 = time.time() # current time in seconds since the Unix epoch
+
         # Forward and Backward Path
         # !! start with zero gradients
         optimizer.zero_grad()
-
-        # TODO: gradient accumulation, accumulate 0.5M token's of gradients every update step, remember to normalize the loss by grad_accum_steps due to "sum of average != overall average"
+        # Gradient accumulation to accumulate 0.5M token's of gradients every update step, remember to normalize the loss by grad_accum_steps due to "sum of average != overall average"
         loss_accum = 0.0
         for micro_step in range(gradient_accumulation_steps):
             # Load batch
@@ -121,6 +126,8 @@ def main():
             x, y = next(train_iter)
             x = x.to(device)
             y = y.to(device)
+
+            # Forward
             # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
             with torch.autocast(device_type = device,dtype=torch.bfloat16):
                 logits, loss = model(x, y)
@@ -128,17 +135,18 @@ def main():
                 # code.interact(local=locals())
             # Exit autocast before the backward path
 
+            # Backward
             # TODO: if ddp, only synchronize the gradients when it is the last step of the gradient accumulated batch
             # Normalize gradient_accumulation_steps before loss.backward()
             loss = loss / gradient_accumulation_steps
-            # The backward path, get the raw gradients and deposit(sum) them into params.grad
+            # Get the raw gradients and deposit(sum) them into params.grad
             loss.backward()
             # track leave nodes
             loss_accum += loss.detach()
 
         # Clip the global norm of the gradients at 1.0 (GPT3)
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-        # todo: learning rate of the current step update here
+
         # Update the parameters: this is essentially w -= lr * w.grad()
         optimizer.step()
 
@@ -147,21 +155,21 @@ def main():
             torch.cuda.synchronize(device)
         elif device == "mps":
             torch.mps.synchronize()
-        # CPU requires no synchronization (operations are synchronous by default)
+            # CPU requires no synchronization (operations are synchronous by default)
+
+        # Log training time and metrics
         t1 = time.time()
         dt = t1- t0 # time difference in seconds
         # tokens per seconds
         B, T = x.shape
-        # TODO: adjust token_per_sec with the gradient accumulated number of tokens 0.5M
         token_per_sec = (B*T*gradient_accumulation_steps)/dt
         # log running time and train loss every iteration
         swanlab.log({
-            "Loss/train_loss": loss_accum.item(), # loss.item(), with gradient accumulation, each individual loss would be overall batch's loss/gradient_accumulation, so we should not use this,
+            "Loss/train_loss": loss_accum, # loss.item(), with gradient accumulation, each individual loss would be overall batch's loss/gradient_accumulation, so we should not use this,
             "Time/current_iteration_time": dt,
             "Time/token_per_sec": token_per_sec,
             "Norm": round(norm.item(), 6),
-            # "Learning Rate": float(scheduler.get_last_lr()[0]),
-            # TODO: track intermediate loss_accum
+            "Learning Rate": float(scheduler.get_last_lr()[0]),
         }, step=i)
 
         # if i == 0 or i % log_every == 9:
@@ -175,8 +183,9 @@ def main():
         #         "Loss/valid_loss": eval_loss,
         #         "Loss/best_valid_loss": best_valid_loss,
         #     }, step=i)
-        #     # TODO: debug why the learning rate doesn't change in iter = 10 and 20
-        #     # scheduler.step()step
+
+        # Learning Rate scheduler update (happens after optimizer step)
+        scheduler.step()
 
     # ----------------------
     # 6. Final Logging

@@ -55,6 +55,9 @@ Finally setup a cloud GPU (4090D), completing the same task (B=4, T=32, 20 itera
 Callout: with 24 GB VRAM, B=64 and T=1024 still triggers OOM. So I have to downsize B to 8, (without gradient accumulation), the peak GPU memory utilization is 11133MiB = 10GB, which means that B can be doubled up to 16, which will utilize 20GB, that's not exceeding the 24GB memory.
 Total training time is 19min 51s. Train loss 6.1, best and final valid loss is 6.2, no overfitting, yay! See you in 2026!
 
+**2026/01/02**
+- Enabled gradient accumulation and temporarily remove the validate loss calculation, it takes only **25 seconds** to complete training task(B=16, T=1024, accumulate gradient=2)! Validation really eat up a lot of time!
+- Enabled learning rate scheduler with Cosine Decay, test run with max_step =50 and validated the decay
 
 ## Blogs:
 ### Attention is All You Need readout
