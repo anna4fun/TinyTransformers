@@ -1,14 +1,18 @@
+import json
+import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Tuple
-
+from typing import Dict, Tuple, List
 import torch
+from datasets import tqdm, load_from_disk
 from torch.utils.data import Dataset, DataLoader
-
 from tinygpt.configs.config import GPT2DataConfig
 import tiktoken
 import logging
-
+import random
+from tqdm import tqdm
+from datasets import load_from_disk, Dataset as HFDataset  # Hugging Face Datasets
+from tinygpt.logger.setup_logger import setup_logger
 
 # ----- The GPT2 Data Loader ------
 """
@@ -24,19 +28,21 @@ Warning: do not move data to GPU yet, the entire corpus will be huge and it's be
 # -------------------------
 # Logging
 # -------------------------
-logger = logging.getLogger("lm_dataset")
-logger.setLevel(logging.DEBUG)          # Or INFO
-handler = logging.StreamHandler()
-formatter = logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
-# prevent double logging if module imported multiple times
-logger.propagate = False
+# logger = logging.getLogger("lm_dataset")
+# logger.setLevel(logging.DEBUG)          # Or INFO
+# handler = logging.StreamHandler()
+# formatter = logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s")
+# handler.setFormatter(formatter)
+# logger.addHandler(handler)
+#
+# # prevent double logging if module imported multiple times
+# logger.propagate = False
+# Setup logger (critical: call after DDP rank is set)
+logger = setup_logger(cfg=GPT2DataConfig, train_name='shakespeare')
 
 
 # -------------------------
-# IO
+# Data Loader for single untokenized file
 # -------------------------
 @lru_cache(maxsize=1)
 def load_corpus(path: str) -> str:

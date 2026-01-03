@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
+
 import torch
 from pathlib import Path
 
@@ -42,6 +44,15 @@ class GPT2DataConfig:
     shakes_text_path: str = PROJECT_ROOT / "lecture_code_and_data/input.txt"
     mps_fineweb_path: str = PROJECT_ROOT / "lecture_code_and_data/fineweb_edu_0048.npy"
     gpu_audodl_fineweb_path: Path = Path("/root/") / "autodl-tmp/kaggle-fineweb"
+    checkpoint_dir: Path = PROJECT_ROOT / "checkpoints"
+    checkpoint_every_n_shards: int = 2
+    token_column: str = "tokens"
+    num_workers: int = 4
+    ddp: bool = True
+    rank: int = 0
+    world_size: int = 4
+    resume_checkpoint: Optional[str] = None
+    log_level: str = "DEBUG"  # DEBUG/INFO/WARNING/ERROR
     shuffle: bool = True
     seed: int = 1337
     max_iters: int = 5000
