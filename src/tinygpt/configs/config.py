@@ -48,7 +48,7 @@ class GPT2DataConfig:
     checkpoint_every_n_shards: int = 2
     token_column: str = "tokens"
     num_workers: int = 4
-    ddp: bool = True
+    ddp: bool = False
     rank: int = 0
     world_size: int = 4
     resume_checkpoint: Optional[str] = None

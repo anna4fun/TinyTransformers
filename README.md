@@ -59,6 +59,22 @@ Total training time is 19min 51s. Train loss 6.1, best and final valid loss is 6
 - Enabled gradient accumulation and temporarily remove the validate loss calculation, it takes only **25 seconds** to complete training task(B=16, T=1024, accumulate gradient=2)! Validation really eat up a lot of time!
 - Enabled learning rate scheduler with Cosine Decay, test run with max_step =50 and validated the decay
 
+**2026/01/03**
+I did a napkin math and realized that it will take 44 hours to iterate the full 10B FineWeb-Edu dataset if I only use 1 GPU, so I decided to enabled DDP. 
+
+Current state: dataloader only loading from 1 txt file, no DDP implemented.
+What I want: 
+1. Dataloder can iterate over 49 sharded .npy files
+2. Model training can be DDP over 4 GPUs
+3. Model training can be paused every 2 sharded file, model checkpoints and dataloader states are logged so that the training can be resumed from where it left of.
+4. Dataloader iteration, DDP, model pause and resume are fully tested before launching on a 10-hour long training
+
+4 things need to be implemented, unit tests and integration tests
+- Global logger [Done]
+- DDP dataloader for sharded files
+- DDP training with 1 and 2 GPUs, with model checkpoints, tested with simple NN first
+- Continue training from previous checkpoints, tested with simple NN first
+
 ## Blogs:
 ### Attention is All You Need readout
 1. [Done] Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)

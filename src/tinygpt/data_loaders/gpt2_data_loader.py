@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple, List
 import torch
-from datasets import tqdm, load_from_disk
+from datasets import tqdm, load_from_disk, load_dataset
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
 import torch.distributed as dist
 from tinygpt.configs.config import GPT2DataConfig
@@ -180,15 +180,14 @@ class ResumableShardedLMSequenceDataset(Dataset):
 
     def _get_sorted_shard_paths(self) -> List[str]:
         """Load shards from pre-split train/test folder (e.g., ./fineweb_edu/train/)"""
-        split_dir = os.path.join(self.cfg.shard_root_dir, self.split)
+        split_dir = os.path.join(self.cfg.gpu_audodl_fineweb_path, self.split)
         if not os.path.exists(split_dir):
             raise ValueError(f"Pre-split folder not found: {split_dir}")
-
-        # List and sort shards numerically (shard_000.parquet < shard_001.parquet)
+        # List and sort shards numerically (shard_000.npy < shard_001.npy)
         shard_files = [
             os.path.join(split_dir, f)
             for f in os.listdir(split_dir)
-            if f.endswith((".parquet", ".jsonl")) and "shard" in f
+            if f.endswith((".parquet", ".jsonl", ".npy")) and "shard" in f
         ]
         shard_files.sort(key=lambda x: int(os.path.basename(x).split("_")[1].split(".")[0]))
         return shard_files
@@ -203,15 +202,10 @@ class ResumableShardedLMSequenceDataset(Dataset):
         total_tokens = 0
         for shard_idx, shard_path in enumerate(tqdm(self.shard_paths, desc=f"Counting {self.split} tokens")):
             # Load shard (lazy) and count tokens
-            if shard_path.endswith(".parquet"):
-                from datasets import Dataset as HFDataset
-                shard = HFDataset.from_parquet(shard_path)
-            elif shard_path.endswith(".jsonl"):
-                from datasets import Dataset as HFDataset
-                shard = HFDataset.from_json(shard_path)
+            if shard_path.endswith(".npy"):
+                shard = load_dataset(shard_path)
             else:
                 raise ValueError(f"Unsupported shard format: {shard_path}")
-
             token_count = sum(len(example[self.cfg.token_column]) for example in shard)
             shard_token_counts[shard_idx] = token_count
             total_tokens += token_count
@@ -244,15 +238,11 @@ class ResumableShardedLMSequenceDataset(Dataset):
     def _load_shard_tokens(self, shard_idx: int) -> torch.LongTensor:
         """Load a single shard into a 1D tensor (cached)"""
         shard_path = self.shard_paths[shard_idx]
-        from datasets import Dataset as HFDataset
-
-        if shard_path.endswith(".parquet"):
-            shard = HFDataset.from_parquet(shard_path)
-        elif shard_path.endswith(".jsonl"):
-            shard = HFDataset.from_json(shard_path)
+        if shard_path.endswith(".npy"):
+            shard = load_dataset(shard_path)
         else:
             raise ValueError(f"Unsupported shard format: {shard_path}")
-
+        # todo: verify why not torch.LongTensor(shard)
         all_tokens = []
         for example in shard:
             all_tokens.extend(example[self.cfg.token_column])
@@ -355,6 +345,26 @@ class ResumableShardedLMSequenceDataset(Dataset):
 
 
 # -------------------------- DDP DataLoader Builder --------------------------
+# DDP: Use DistributedSampler (critical for batch splitting across GPUs)
+def build_dl(dataset: ResumableShardedLMSequenceDataset, split: str) -> DataLoader:
+    sampler = DistributedSampler(
+        dataset,
+        num_replicas=cfg.world_size,
+        rank=cfg.rank,
+        shuffle=cfg.shuffle,
+        seed=cfg.seed
+    ) if cfg.ddp else None
+
+    return DataLoader(
+        dataset,
+        batch_size=cfg.batch_size,
+        sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        drop_last=False,
+        persistent_workers=True if cfg.num_workers > 0 else False
+    )
+
 def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
     """Build DDP-compatible DataLoaders with resumable training"""
     # Initialize DDP (call this once at the start of training)
@@ -364,26 +374,6 @@ def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
     # Create train/test datasets (pre-split folders)
     train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
-
-    # DDP: Use DistributedSampler (critical for batch splitting across GPUs)
-    def build_dl(dataset: ResumableShardedLMSequenceDataset, split: str) -> DataLoader:
-        sampler = DistributedSampler(
-            dataset,
-            num_replicas=cfg.world_size,
-            rank=cfg.rank,
-            shuffle=cfg.shuffle,
-            seed=cfg.seed
-        ) if cfg.ddp else None
-
-        return DataLoader(
-            dataset,
-            batch_size=cfg.batch_size,
-            sampler=sampler,  # Overrides shuffle (use sampler for DDP)
-            num_workers=cfg.num_workers,
-            pin_memory=True,
-            drop_last=False,
-            persistent_workers=True if cfg.num_workers > 0 else False
-        )
 
     train_dl = build_dl(train_dataset, "train")
     test_dl = build_dl(test_dataset, "test")

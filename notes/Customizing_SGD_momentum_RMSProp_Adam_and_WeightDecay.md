@@ -94,8 +94,15 @@ the beginning (since beta < 1, the denominator is very quickly close to 1).
 
 
 ## 4. AdamW
+Fused Adam
 
-## 5. Other Techniques: Gradient Clipping, Weight Decay and Batch Size tuning
+
+## 5. Other Techniques 
+- Batch size tuning,
+- Learning rate scheduler
+- Gradient Clipping, 
+- Weight Decay,
+- Gradient Accumulation
 
 
 ### Batch size tuning
@@ -105,6 +112,8 @@ Why small to large batch size?
 
 At the beginning of the training, the model is learning very basic things: which tokens are commonly used versus which ones are not and therefore should be ignored. So the gradients from every single examples are highly correlated (they all look roughly the same because they are all telling which tokens appeared or not) and there's no difference between learning small batch size and large batch size.
 Once the basic frequent-or-not pattern has been learned by the model, it then makes sense to feed large sentences of data so that the gradients are more de-correlated, and we can learn complex patterns with statistical power.
+
+
 
 ## Coding tips
 

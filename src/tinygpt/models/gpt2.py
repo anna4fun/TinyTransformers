@@ -192,6 +192,8 @@ class GPT2(nn.Module):
         # 3. Use fused AdamW if available, kernel fusion is faster bc it's putting all params in a single core
         fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
         use_fused = fused_available and 'cuda' in device
+        print(use_fused)
+        # todo: ddp master process, print master process
         # GPT3 paper setup
         optimizer = torch.optim.AdamW(optim_groups, lr=lr, betas=(0.9, 0.95), eps=1e-8, fused=use_fused)
         return optimizer
