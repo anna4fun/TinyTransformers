@@ -1,0 +1,5 @@
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP device mps
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP rank 0
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP local rank 0
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP world size 1
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP master process True

@@ -15,7 +15,7 @@ class RankFilter(logging.Filter):
         return True
 
 # -------------------------- Logger Configuration --------------------------
-def setup_logger(cfg: GPT2DataConfig, train_name: "fineweb_training") -> logging.Logger:
+def setup_logger(cfg: GPT2DataConfig, train_name: "fineweb_training", local_rank: 0) -> logging.Logger:
     """
     Configure a global logger for DDP training:
     - Rank 0: Writes to file + console
@@ -41,19 +41,22 @@ def setup_logger(cfg: GPT2DataConfig, train_name: "fineweb_training") -> logging
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(log_format)
 
-    console_handler.addFilter(RankFilter(cfg.rank))
+    console_handler.addFilter(RankFilter(local_rank))
     logger.addHandler(console_handler)
 
     # 2. File Handler (only rank 0 writes to file to avoid duplicates)
     train_file = "training_{}.log".format(train_name)
-    if cfg.rank == 0:
+    # Only the master process write the log
+    if local_rank == 0:
         os.makedirs(cfg.checkpoint_dir, exist_ok=True)
         log_file_path = os.path.join(cfg.checkpoint_dir, train_file)
         # Append mode (preserve logs across resume)
         file_handler = logging.FileHandler(log_file_path, mode="a", encoding="utf-8")
         file_handler.setFormatter(log_format)
-        file_handler.addFilter(RankFilter(cfg.rank))
+        file_handler.addFilter(RankFilter(local_rank))
         logger.addHandler(file_handler)
+    else:
+        logging.basicConfig(level=logging.ERROR)
 
     # Suppress unwanted logs from other libraries (e.g., datasets/huggingface)
     logging.getLogger("datasets").setLevel(logging.WARNING)
