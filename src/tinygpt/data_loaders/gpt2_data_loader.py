@@ -1,8 +1,12 @@
+import gc
 import json
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple, List
+
+import numpy as np
 import torch
 from datasets import tqdm, load_from_disk, load_dataset
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
@@ -180,35 +184,78 @@ class ResumableShardedLMSequenceDataset(Dataset):
 
     def _get_sorted_shard_paths(self) -> List[str]:
         """Load shards from pre-split train/test folder (e.g., ./fineweb_edu/train/)"""
-        split_dir = os.path.join(self.cfg.gpu_audodl_fineweb_path, self.split)
-        if not os.path.exists(split_dir):
+        split_dir = self.cfg.gpu_audodl_fineweb_path / self.split
+        if not split_dir.exists:
             raise ValueError(f"Pre-split folder not found: {split_dir}")
         # List and sort shards numerically (shard_000.npy < shard_001.npy)
-        shard_files = [
-            os.path.join(split_dir, f)
-            for f in os.listdir(split_dir)
-            if f.endswith((".parquet", ".jsonl", ".npy")) and "shard" in f
-        ]
-        shard_files.sort(key=lambda x: int(os.path.basename(x).split("_")[1].split(".")[0]))
+        shard_files = list(split_dir.glob("*.npy")) # every element is a PosixPath object
         return shard_files
+
+    @staticmethod
+    def _extract_shard_index(shard_path: Path) -> int:
+        """Helper: Extract numeric index from shard filename (e.g., fineweb_edu_0030.npy → 30)"""
+        # Regex matches 1+ digits immediately before .npy (handles padded zeros like 0030)
+        match = re.search(r'(\d+)\.npy$', shard_path.name)
+        if not match:
+            raise ValueError(f"Could not extract index from shard filename: {shard_path.name}")
+        return int(match.group(1))
+
+    @staticmethod
+    def _read_npy_header(file_path: Path) -> Tuple[tuple, np.dtype]:
+        """
+        Stable, public API way to read .npy header (shape + dtype) — no private functions!
+        Compatible with NumPy 1.17+ (all modern versions)
+        """
+        with open(file_path, 'rb') as f:
+            # Step 1: Read magic bytes to verify it's a .npy file
+            magic = f.read(6)
+            if magic != b'\x93NUMPY':
+                raise ValueError(f"Not a valid .npy file: {file_path.name}")
+
+            # Step 2: Read version (bytes 6-8)
+            version = tuple(f.read(2))
+            if version not in [(1, 0), (1, 1), (2, 0)]:
+                raise ValueError(f"Unsupported .npy version {version} — use NumPy 1.17+")
+
+            # Step 3: Read header using public NumPy APIs
+            if version in [(1, 0), (1, 1)]:
+                # For NumPy v1.0/v1.1 (most common for FineWeb datasets)
+                header = np.lib.format.read_array_header_1_0(f)
+            else:
+                # For NumPy v2.0 (newer, less common)
+                header = np.lib.format.read_array_header_2_0(f)
+
+            # Extract shape and dtype from header
+            shape = header['shape']
+            dtype = np.dtype(header['descr'])
+        return shape, dtype
 
     def _compute_shard_token_counts(self) -> Tuple[Dict[int, int], int]:
         """
         Precompute:
-        - shard_token_counts: {shard_idx: number of tokens in shard}
-        - total_tokens: total tokens in the split (train/test)
+        - shard_token_counts: Dict: {shard_idx: number of tokens in shard}
+        - total_tokens: Int: total tokens in the split (train/test)
         """
         shard_token_counts = {}
         total_tokens = 0
-        for shard_idx, shard_path in enumerate(tqdm(self.shard_paths, desc=f"Counting {self.split} tokens")):
-            # Load shard (lazy) and count tokens
-            if shard_path.endswith(".npy"):
-                shard = load_dataset(shard_path)
-            else:
-                raise ValueError(f"Unsupported shard format: {shard_path}")
-            token_count = sum(len(example[self.cfg.token_column]) for example in shard)
-            shard_token_counts[shard_idx] = token_count
-            total_tokens += token_count
+        for shard in self.shard_paths:
+            try:
+                shard_idx = self._extract_shard_index(shard)
+                # Read ONLY shape/dtype (a few hundred bytes — no data load)
+                shape, _ = self._read_npy_header(shard)
+                # Calculate token count (product of all dimensions — int64 to avoid overflow)
+                token_count = np.prod(shape, dtype=np.int64)
+                shard_token_counts[shard_idx] = token_count
+                total_tokens += token_count
+                ram_used = os.popen('free -h').readlines()[1].split()[2]
+                print(f"Processed shard {shard_idx}: {token_count:,} tokens | RAM used: {ram_used}")
+                # force gc
+                gc.collect()
+
+            except Exception as e:
+                # Skip corrupt/invalid shards instead of crashing
+                print(f"WARNING: Skipping shard {shard} → Error: {str(e)}")
+                continue
         return shard_token_counts, total_tokens
 
     def _get_shard_start_indices(self) -> Dict[int, List[int]]:
