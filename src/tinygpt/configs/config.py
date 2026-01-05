@@ -46,6 +46,7 @@ class GPT2DataConfig:
     gpu_audodl_fineweb_path: Path = Path("/root/") / "autodl-tmp/kaggle-fineweb"
     checkpoint_dir: Path = PROJECT_ROOT / "checkpoints"
     checkpoint_every_n_shards: int = 2
+    log_dir: Path = PROJECT_ROOT / "logs"
     token_column: str = "tokens"
     num_workers: int = 4
     ddp: bool = False

@@ -48,8 +48,8 @@ def setup_logger(cfg: GPT2DataConfig, train_name: "fineweb_training", local_rank
     train_file = "training_{}.log".format(train_name)
     # Only the master process write the log
     if local_rank == 0:
-        os.makedirs(cfg.checkpoint_dir, exist_ok=True)
-        log_file_path = os.path.join(cfg.checkpoint_dir, train_file)
+        os.makedirs(cfg.log_dir, exist_ok=True)
+        log_file_path = os.path.join(cfg.log_dir, train_file)
         # Append mode (preserve logs across resume)
         file_handler = logging.FileHandler(log_file_path, mode="a", encoding="utf-8")
         file_handler.setFormatter(log_format)
