@@ -70,7 +70,7 @@ def main():
         tags = ["GPT2", "Experiment", "Shakespeare", "small dataset"],
     )
     # TODO: test DDP master process verification process
-    logger.info("I am GPU {ddp_rank}")
+    logger.info(f"I am GPU {ddp_rank}")
     # import sys; sys.exit(0)
 
     # ----------------------
@@ -106,7 +106,7 @@ def main():
     # todo: delete after test
     gradient_accumulation_steps = 2
     if master_process:
-        logger.info("total desired batch size: {total_batch_size}")
+        logger.info(f"total desired batch size: {total_batch_size}")
         logger.info(f"=> calculated gradient accumulation steps: {gradient_accumulation_steps}")
 
     # Number of steps to go through 1 epoch
