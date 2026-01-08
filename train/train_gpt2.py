@@ -224,7 +224,9 @@ def main():
     # * Save data progress (e.g., last processed shard + batch index) alongside model checkpoints.
     # * Save model weights, optimizer state, scheduler state, and data state (shard/batch).
     # ----------------------
-    save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler)
+    # save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler)
+    # todo: bug: save_training_checkpoint missing 4 required positional arguments: 'shard_idx', 'seq_idx', 'epoch', and 'loss'
+    # todo: save data config states
 
     # ----------------------
     # 7. Final Logging

@@ -1,5 +1,6 @@
-2026-01-05 17:43:06 | GPU 0 | INFO | DDP device mps
-2026-01-05 17:43:06 | GPU 0 | INFO | DDP rank 0
-2026-01-05 17:43:06 | GPU 0 | INFO | DDP local rank 0
-2026-01-05 17:43:06 | GPU 0 | INFO | DDP world size 1
-2026-01-05 17:43:06 | GPU 0 | INFO | DDP master process True
+2026-01-08 17:00:09 | GPU 0 | INFO | I am GPU 0
+2026-01-08 17:00:15 | GPU 0 | INFO | total desired batch size: 524288
+2026-01-08 17:00:15 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
+2026-01-08 17:04:56 | GPU 0 | INFO | I am GPU 0
+2026-01-08 17:05:03 | GPU 0 | INFO | total desired batch size: 524288
+2026-01-08 17:05:03 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
