@@ -1,0 +1,5 @@
+2026-01-08 15:13:45 | GPU 0 | INFO | Start a new round
+2026-01-08 15:13:45 | GPU 0 | INFO | Manual test file read
+2026-01-08 15:13:45 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 15:13:45 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 15:13:45 | GPU 0 | INFO | now do the dataset class test

@@ -152,9 +152,11 @@ def make_dataloader(cfg: GPT2DataConfig,
 # -------------------------- Sharded LM Dataset (Resumable + DDP) --------------------------
 class ResumableShardedLMSequenceDataset(Dataset):
     """
+    P0:
     - Loads shards from pre-split train/test folders (no manual splitting)
-    - DDP-compatible (unique data per GPU)
     - Trackable progress for resumable training
+    P1:
+    - DDP-compatible (unique data per GPU)
     """
 
     def __init__(self, cfg: GPT2DataConfig, split: str = "train"):
@@ -165,11 +167,11 @@ class ResumableShardedLMSequenceDataset(Dataset):
         # Step 1: List all shard paths (sorted) from pre-split folder
         self.shard_paths = self._get_sorted_shard_paths()
         # Step 2: Precompute token offsets + total tokens (per shard)
-        self.shard_token_counts, self.total_tokens = self._compute_shard_token_counts()
+        # self.shard_token_counts, self.total_tokens = self._compute_shard_token_counts()
         # Step 3: Precompute valid sequence start indices (per shard)
-        self.shard_start_indices = self._get_shard_start_indices()
+        # self.shard_start_indices = self._get_shard_start_indices()
         # Step 4: Total valid (x,y) pairs (full coverage)
-        self.total_sequences = sum(len(indices) for indices in self.shard_start_indices.values())
+        # self.total_sequences = sum(len(indices) for indices in self.shard_start_indices.values())
 
         # State for streaming/caching
         self.current_shard_idx = -1
@@ -190,73 +192,6 @@ class ResumableShardedLMSequenceDataset(Dataset):
         # List and sort shards numerically (shard_000.npy < shard_001.npy)
         shard_files = list(split_dir.glob("*.npy")) # every element is a PosixPath object
         return shard_files
-
-    @staticmethod
-    def _extract_shard_index(shard_path: Path) -> int:
-        """Helper: Extract numeric index from shard filename (e.g., fineweb_edu_0030.npy → 30)"""
-        # Regex matches 1+ digits immediately before .npy (handles padded zeros like 0030)
-        match = re.search(r'(\d+)\.npy$', shard_path.name)
-        if not match:
-            raise ValueError(f"Could not extract index from shard filename: {shard_path.name}")
-        return int(match.group(1))
-
-    @staticmethod
-    def _read_npy_header(file_path: Path) -> Tuple[tuple, np.dtype]:
-        """
-        Stable, public API way to read .npy header (shape + dtype) — no private functions!
-        Compatible with NumPy 1.17+ (all modern versions)
-        """
-        with open(file_path, 'rb') as f:
-            # Step 1: Read magic bytes to verify it's a .npy file
-            magic = f.read(6)
-            if magic != b'\x93NUMPY':
-                raise ValueError(f"Not a valid .npy file: {file_path.name}")
-
-            # Step 2: Read version (bytes 6-8)
-            version = tuple(f.read(2))
-            if version not in [(1, 0), (1, 1), (2, 0)]:
-                raise ValueError(f"Unsupported .npy version {version} — use NumPy 1.17+")
-
-            # Step 3: Read header using public NumPy APIs
-            if version in [(1, 0), (1, 1)]:
-                # For NumPy v1.0/v1.1 (most common for FineWeb datasets)
-                header = np.lib.format.read_array_header_1_0(f)
-            else:
-                # For NumPy v2.0 (newer, less common)
-                header = np.lib.format.read_array_header_2_0(f)
-
-            # Extract shape and dtype from header
-            shape = header['shape']
-            dtype = np.dtype(header['descr'])
-        return shape, dtype
-
-    def _compute_shard_token_counts(self) -> Tuple[Dict[int, int], int]:
-        """
-        Precompute:
-        - shard_token_counts: Dict: {shard_idx: number of tokens in shard}
-        - total_tokens: Int: total tokens in the split (train/test)
-        """
-        shard_token_counts = {}
-        total_tokens = 0
-        for shard in self.shard_paths:
-            try:
-                shard_idx = self._extract_shard_index(shard)
-                # Read ONLY shape/dtype (a few hundred bytes — no data load)
-                shape, _ = self._read_npy_header(shard)
-                # Calculate token count (product of all dimensions — int64 to avoid overflow)
-                token_count = np.prod(shape, dtype=np.int64)
-                shard_token_counts[shard_idx] = token_count
-                total_tokens += token_count
-                ram_used = os.popen('free -h').readlines()[1].split()[2]
-                print(f"Processed shard {shard_idx}: {token_count:,} tokens | RAM used: {ram_used}")
-                # force gc
-                gc.collect()
-
-            except Exception as e:
-                # Skip corrupt/invalid shards instead of crashing
-                print(f"WARNING: Skipping shard {shard} → Error: {str(e)}")
-                continue
-        return shard_token_counts, total_tokens
 
     def _get_shard_start_indices(self) -> Dict[int, List[int]]:
         """
@@ -301,36 +236,6 @@ class ResumableShardedLMSequenceDataset(Dataset):
             self.cached_tokens = self._load_shard_tokens(shard_idx)
             self.cached_shard_idx = shard_idx
         return self.cached_tokens[local_start:local_end]
-
-    def _get_globally_unique_indices(self) -> List[int]:
-        """
-        DDP: Split sequence indices across GPUs (each GPU gets a unique subset)
-        Returns list of global sequence indices for this GPU
-        """
-        all_sequences = []
-        # Flatten all sequence indices (global_seq_idx = [shard_idx][local_seq_idx])
-        for shard_idx in range(len(self.shard_paths)):
-            for local_seq_idx in self.shard_start_indices[shard_idx]:
-                all_sequences.append((shard_idx, local_seq_idx))
-
-        # DDP: Split sequences across world_size GPUs (rank = current GPU ID)
-        if self.cfg.ddp:
-            # Ensure deterministic split
-            random.seed(self.cfg.seed)
-            all_sequences = sorted(all_sequences)
-            # Assign sequences to GPU rank (round-robin)
-            all_sequences = all_sequences[self.cfg.rank::self.cfg.world_size]
-
-        # Filter for resume state (skip processed sequences)
-        resume_sequences = []
-        for shard_idx, local_seq_idx in all_sequences:
-            if shard_idx < self.resume_shard_idx:
-                continue
-            if shard_idx == self.resume_shard_idx and local_seq_idx < self.resume_seq_idx:
-                continue
-            resume_sequences.append((shard_idx, local_seq_idx))
-
-        return resume_sequences
 
     def __len__(self) -> int:
         """Number of sequences for THIS GPU (DDP-aware)"""

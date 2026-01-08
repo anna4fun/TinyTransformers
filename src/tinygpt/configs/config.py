@@ -51,7 +51,7 @@ class GPT2DataConfig:
     num_workers: int = 4
     ddp: bool = False
     rank: int = 0
-    world_size: int = 4
+    world_size: int = 1
     resume_checkpoint: Optional[str] = None
     log_level: str = "DEBUG"  # DEBUG/INFO/WARNING/ERROR
     shuffle: bool = True
