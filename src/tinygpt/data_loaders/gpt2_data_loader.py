@@ -163,116 +163,63 @@ class ResumableShardedLMSequenceDataset(Dataset):
         self.cfg = cfg
         self.split = split  # "train" or "test" (uses pre-split folders)
         self.block_size = cfg.block_size
-
         # Step 1: List all shard paths (sorted) from pre-split folder
         self.shard_paths = self._get_sorted_shard_paths()
-        # Step 2: Precompute token offsets + total tokens (per shard)
-        # self.shard_token_counts, self.total_tokens = self._compute_shard_token_counts()
-        # Step 3: Precompute valid sequence start indices (per shard)
-        # self.shard_start_indices = self._get_shard_start_indices()
-        # Step 4: Total valid (x,y) pairs (full coverage)
-        # self.total_sequences = sum(len(indices) for indices in self.shard_start_indices.values())
+        # Optional: Pre-load a small buffer (avoids reloading files too often)
+        self.current_file_idx = 0
+        self.current_tokens = self._load_file(self.current_file_idx)
+        self.current_pos = 0
 
-        # State for streaming/caching
-        self.current_shard_idx = -1
-        self.cached_tokens = torch.LongTensor([])
-        self.cached_shard_idx = -1
-
-        # Resumable state (track progress)
-        self.resume_shard_idx = 0  # Start from shard 0 by default
-        self.resume_seq_idx = 0  # Start from first sequence in resume_shard_idx
-        if cfg.resume_checkpoint:
-            self._load_resume_state()
-
-    def _get_sorted_shard_paths(self) -> List[str]:
+    def _get_sorted_shard_paths(self) -> List[Path]:
         """Load shards from pre-split train/test folder (e.g., ./fineweb_edu/train/)"""
         split_dir = self.cfg.gpu_audodl_fineweb_path / self.split
         if not split_dir.exists:
             raise ValueError(f"Pre-split folder not found: {split_dir}")
         # List and sort shards numerically (shard_000.npy < shard_001.npy)
-        shard_files = list(split_dir.glob("*.npy")) # every element is a PosixPath object
+        shard_files = sorted(list(split_dir.glob("*.npy"))) # every element is a PosixPath object
         return shard_files
 
-    def _get_shard_start_indices(self) -> Dict[int, List[int]]:
+    def _load_file(self, file_idx):
+        """Load a single .npy file into a numpy array of tokens"""
+        file_path = self.shard_paths[file_idx]
+        try:
+            # Load tokens (returns 1D numpy array of integers)
+            tokens = np.load(file_path).astype(np.int64)
+            return tokens
+        except Exception as e:
+            print(f"Warning: Failed to load {file_path} – stopped. Error: {e}")
+
+    def __len__(self):
         """
-        Precompute valid start indices PER SHARD (for resumable training):
-        - shard_start_indices: {shard_idx: list of start indices (relative to shard)}
+        We don't need an exact length – approximate is fine for training.
+        This returns a large number (enough for epochs of training).
         """
-        shard_start_indices = {}
-        global_token_offset = 0  # Global token index across all shards
+        # Approx: 10B tokens / 1024 seq length = ~9.7M sequences (adjust as needed)
+        return 10_000_000
 
-        for shard_idx in range(len(self.shard_paths)):
-            shard_token_count = self.shard_token_counts[shard_idx]
-            # Valid start indices for this shard (relative to shard)
-            max_local_start = shard_token_count - self.block_size - 1
-            if max_local_start < 0:
-                shard_start_indices[shard_idx] = []
-                global_token_offset += shard_token_count
-                continue
+    def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Get a single sequence of (seq_length + 1) tokens (for input/target)"""
+        # Ensure we have enough tokens left in current file for 1 sequence
+        while self.current_pos + self.block_size + 1 > len(self.current_tokens):
+            # Move to next file
+            self.current_file_idx = (self.current_file_idx + 1) % len(self.shard_paths)
+            self.current_tokens = self._load_file(self.current_file_idx)
+            self.current_pos = 0
 
-            # Local start indices (0 to max_local_start)
-            local_start_indices = list(range(max_local_start + 1))
-            shard_start_indices[shard_idx] = local_start_indices
-            global_token_offset += shard_token_count
-
-        return shard_start_indices
-
-    def _load_shard_tokens(self, shard_idx: int) -> torch.LongTensor:
-        """Load a single shard into a 1D tensor (cached)"""
-        shard_path = self.shard_paths[shard_idx]
-        if shard_path.endswith(".npy"):
-            shard = load_dataset(shard_path)
-        else:
-            raise ValueError(f"Unsupported shard format: {shard_path}")
-        # todo: verify why not torch.LongTensor(shard)
-        all_tokens = []
-        for example in shard:
-            all_tokens.extend(example[self.cfg.token_column])
-        return torch.LongTensor(all_tokens)
-
-    def _get_tokens_from_shard(self, shard_idx: int, local_start: int, local_end: int) -> torch.Tensor:
-        """Get tokens from a single shard (local indices)"""
-        if self.cached_shard_idx != shard_idx:
-            self.cached_tokens = self._load_shard_tokens(shard_idx)
-            self.cached_shard_idx = shard_idx
-        return self.cached_tokens[local_start:local_end]
-
-    def __len__(self) -> int:
-        """Number of sequences for THIS GPU (DDP-aware)"""
-        return len(self._get_globally_unique_indices())
-
-    def __getitem__(self, global_seq_idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Get (x,y) pair (DDP + resume-aware)"""
-        # Map global_seq_idx to (shard_idx, local_seq_idx)
-        unique_indices = self._get_globally_unique_indices()
-        shard_idx, local_seq_idx = unique_indices[global_seq_idx]
-
-        # Local start/end for x/y (relative to shard)
-        local_x_start = local_seq_idx
-        local_x_end = local_seq_idx + self.block_size
-        local_y_start = local_seq_idx + 1
-        local_y_end = local_seq_idx + self.block_size + 1
-
-        # Get x (input) and y (target)
-        x = self._get_tokens_from_shard(shard_idx, local_x_start, local_x_end)
-        y = self._get_tokens_from_shard(shard_idx, local_y_start, local_y_end)
-
-        # Cross-shard handling (if sequence spans shards)
-        if len(x) < self.block_size:
-            # Fetch remaining tokens from next shard
-            next_shard_idx = shard_idx + 1
-            remaining = self.block_size - len(x)
-            x = torch.cat([x, self._get_tokens_from_shard(next_shard_idx, 0, remaining)])
-            y = torch.cat([y, self._get_tokens_from_shard(next_shard_idx, 1, remaining + 1)])
-
-        assert len(x) == self.block_size and len(y) == self.block_size
+        # Extract a sequence of (seq_length + 1) tokens
+        # (GPT-2 uses input = tokens[:-1], target = tokens[1:])
+        buf = self.current_tokens[self.current_pos: self.current_pos + self.block_size + 1]
+        x = buf[:-1]  # inputs
+        y = buf[1:]   # targets
+        self.current_pos += self.block_size  # Move forward for next sequence
+        # Convert to PyTorch tensor (GPT-2 expects long tensors)
         return x, y
 
-    def _save_resume_state(self, shard_idx: int, seq_idx: int):
+    def _save_resume_state(self, current_file_idx: int, current_pos: int):
         """Save resume state (last processed shard + sequence index)"""
         resume_state = {
-            "resume_shard_idx": shard_idx,
-            "resume_seq_idx": seq_idx,
+            "resume_shard_idx": current_file_idx,
+            "resume_seq_idx": current_pos,
             "shard_paths": self.shard_paths,
             "split": self.split
         }
@@ -296,27 +243,6 @@ class ResumableShardedLMSequenceDataset(Dataset):
         print(f"Resumed from shard {self.resume_shard_idx}, sequence {self.resume_seq_idx}")
 
 
-# -------------------------- DDP DataLoader Builder --------------------------
-# DDP: Use DistributedSampler (critical for batch splitting across GPUs)
-def build_dl(dataset: ResumableShardedLMSequenceDataset, split: str) -> DataLoader:
-    sampler = DistributedSampler(
-        dataset,
-        num_replicas=cfg.world_size,
-        rank=cfg.rank,
-        shuffle=cfg.shuffle,
-        seed=cfg.seed
-    ) if cfg.ddp else None
-
-    return DataLoader(
-        dataset,
-        batch_size=cfg.batch_size,
-        sampler=sampler,  # Overrides shuffle (use sampler for DDP)
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        drop_last=False,
-        persistent_workers=True if cfg.num_workers > 0 else False
-    )
-
 def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
     """Build DDP-compatible DataLoaders with resumable training"""
     # Initialize DDP (call this once at the start of training)
@@ -326,13 +252,44 @@ def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
     # Create train/test datasets (pre-split folders)
     train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
+    train_dl = DataLoader(train_dataset,
+                          batch_size=cfg.batch_size,
+                          # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+                          num_workers=cfg.num_workers,
+                          pin_memory=True,
+                          drop_last=False,
+                          persistent_workers=True if cfg.num_workers > 0 else False
+                          )
+    test_dl = DataLoader(test_dataset,
+                          batch_size=cfg.batch_size,
+                          # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+                          num_workers=cfg.num_workers,
+                          pin_memory=True,
+                          drop_last=False,
+                          persistent_workers=True if cfg.num_workers > 0 else False
+                          )
+    # DDP
+    # train_dl = build_dl(train_dataset, "train")
+    # test_dl = build_dl(test_dataset, "test")
+    return dict(train_dl=train_dl, test_dl=test_dl)
 
-    train_dl = build_dl(train_dataset, "train")
-    test_dl = build_dl(test_dataset, "test")
-
-    return {
-        "train_dl": train_dl,
-        "test_dl": test_dl,
-        "train_dataset": train_dataset,  # For checkpointing progress
-        "test_dataset": test_dataset
-    }
+# -------------------------- DDP DataLoader Builder --------------------------
+# DDP: Use DistributedSampler (critical for batch splitting across GPUs)
+# def build_dl(dataset: ResumableShardedLMSequenceDataset, split: str) -> DataLoader:
+#     sampler = DistributedSampler(
+#         dataset,
+#         num_replicas=cfg.world_size,
+#         rank=cfg.rank,
+#         shuffle=cfg.shuffle,
+#         seed=cfg.seed
+#     ) if cfg.ddp else None
+#
+#     return DataLoader(
+#         dataset,
+#         batch_size=cfg.batch_size,
+#         sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+#         num_workers=cfg.num_workers,
+#         pin_memory=True,
+#         drop_last=False,
+#         persistent_workers=True if cfg.num_workers > 0 else False
+#     )

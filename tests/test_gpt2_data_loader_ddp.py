@@ -1,6 +1,6 @@
 import os
 import pytest
-from tinygpt.data_loaders.gpt2_data_loader import ResumableShardedLMSequenceDataset, logger
+from tinygpt.data_loaders.gpt2_data_loader import ResumableShardedLMSequenceDataset, logger, make_ddp_dataloader
 from tinygpt.configs.config import GPT2DataConfig
 from tinygpt.distributed_utils import init_ddp
 from tinygpt.logger.setup_logger import setup_logger
@@ -31,9 +31,16 @@ def test_resumeable_dataset():
         logger.info("now do the dataset class test")
         # The following code gets killed when running on CPU (2G), possibly due to OOM
 
-        # ds = ResumableShardedLMSequenceDataset(cfg=config, split="train")
-        # shard_paths = ds.shard_paths
-        # logger.info(f"Shard path {shard_paths}")
+        ds = ResumableShardedLMSequenceDataset(cfg=config, split="test")
+        shard_paths_test = ds.shard_paths
+        logger.info(f"Test dir Shard path {shard_paths_test}")
+        ds = ResumableShardedLMSequenceDataset(cfg=config, split="train")
+        shard_paths_train = ds.shard_paths
+        logger.info(f"Train dir Shard path {shard_paths_train}")
+
+        # dl = make_ddp_dataloader(cfg=config)
+        # train_dl = dl["train_dl"]
+        # test_dl = dl["test_dl"]
         # logger.info(f"Shard token counts {ds.shard_token_counts}")
         # logger.info(f"Total tokens {ds.total_tokens}")
         # logger.info(f"Shard start indices: {ds.shard_start_indices}")

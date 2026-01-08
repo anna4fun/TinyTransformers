@@ -9,11 +9,13 @@ import numpy as np
 def test_048file_legit():
     cfg = GPT2DataConfig()
 
-    device = "mps"
-    file_path = cfg.mps_fineweb_path
+    device = "cpu"
+    file_path = cfg.gpu_audodl_fineweb_path / "train/fineweb_edu_0048.npy"
     if torch.cuda.is_available():
         device = "cuda"
-        file_path = cfg.gpu_audodl_fineweb_path / "train/fineweb_edu_0048.npy"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+        file_path = cfg.mps_fineweb_path
 
     # file exist
     assert file_path.exists(), f"ERROR: File does NOT exist → {file_path}"

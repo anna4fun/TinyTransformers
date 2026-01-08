@@ -3,3 +3,46 @@
 2026-01-08 15:13:45 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
 2026-01-08 15:13:45 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
 2026-01-08 15:13:45 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 15:16:10 | GPU 0 | INFO | Start a new round
+2026-01-08 15:16:10 | GPU 0 | INFO | Manual test file read
+2026-01-08 15:16:10 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 15:16:10 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 15:16:10 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 15:18:28 | GPU 0 | INFO | Start a new round
+2026-01-08 15:18:28 | GPU 0 | INFO | Manual test file read
+2026-01-08 15:18:28 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 15:18:28 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 15:18:28 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:21:57 | GPU 0 | INFO | Start a new round
+2026-01-08 16:21:57 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:21:57 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:21:57 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:21:57 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:23:28 | GPU 0 | INFO | Start a new round
+2026-01-08 16:23:28 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:23:28 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:23:28 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:23:28 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:24:03 | GPU 0 | INFO | Start a new round
+2026-01-08 16:24:03 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:24:03 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:24:03 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:24:03 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:39:07 | GPU 0 | INFO | Start a new round
+2026-01-08 16:39:07 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:39:07 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:39:07 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:39:07 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:41:50 | GPU 0 | INFO | Start a new round
+2026-01-08 16:41:50 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:41:50 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:41:50 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:41:50 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:41:51 | GPU 0 | INFO | Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 16:44:53 | GPU 0 | INFO | Start a new round
+2026-01-08 16:44:53 | GPU 0 | INFO | Manual test file read
+2026-01-08 16:44:53 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 16:44:53 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 16:44:53 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 16:44:53 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 16:44:54 | GPU 0 | INFO | Train dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0000.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0001.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0002.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0003.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0004.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0005.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0006.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0007.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0008.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0009.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0010.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0011.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0012.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0013.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0014.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0015.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0016.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0017.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0018.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0019.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0020.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0021.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0022.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0023.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0024.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0025.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0026.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0027.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0028.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0029.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0031.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0032.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0033.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0034.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0035.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0036.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0037.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0038.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0039.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0040.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0041.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0042.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0043.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0044.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0045.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0046.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0047.npy'), PosixPath('/root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0048.npy')]
