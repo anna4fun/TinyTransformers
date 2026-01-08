@@ -77,3 +77,31 @@
 2026-01-08 16:57:16 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
 2026-01-08 16:57:22 | GPU 0 | INFO | X shape: torch.Size([16, 1024])
 2026-01-08 16:57:22 | GPU 0 | INFO | y shape: torch.Size([16, 1024])
+2026-01-08 18:20:46 | GPU 0 | INFO | Start a new round
+2026-01-08 18:20:46 | GPU 0 | INFO | Manual test file read
+2026-01-08 18:20:46 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 18:20:46 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 18:20:46 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 18:20:46 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 18:20:53 | GPU 0 | INFO | X shape: torch.Size([16, 1024])
+2026-01-08 18:20:53 | GPU 0 | INFO | y shape: torch.Size([16, 1024])
+2026-01-08 18:52:58 | GPU 0 | INFO | Start a new round
+2026-01-08 18:52:58 | GPU 0 | INFO | Manual test file read
+2026-01-08 18:52:58 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 18:52:58 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 18:52:58 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 18:52:59 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 18:53:06 | GPU 0 | INFO | X shape: torch.Size([16, 1024])
+2026-01-08 18:53:06 | GPU 0 | INFO | y shape: torch.Size([16, 1024])
+2026-01-08 18:53:06 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-08 18:53:06 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-08 18:53:06 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-08 22:18:07 | GPU 0 | INFO | Start a new round
+2026-01-08 22:18:07 | GPU 0 | INFO | Manual test file read
+2026-01-08 22:18:07 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 22:18:07 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 22:18:07 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 22:18:08 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 22:18:11 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-08 22:18:11 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-08 22:18:11 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
