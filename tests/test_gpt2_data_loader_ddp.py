@@ -1,5 +1,7 @@
 import os
 import pytest
+import torch
+
 from tinygpt.data_loaders.gpt2_data_loader import ResumableShardedLMSequenceDataset, logger, make_ddp_dataloader
 from tinygpt.configs.config import GPT2DataConfig
 from tinygpt.distributed_utils import init_ddp
@@ -33,14 +35,26 @@ def test_resumeable_dataset():
 
         ds = ResumableShardedLMSequenceDataset(cfg=config, split="test")
         shard_paths_test = ds.shard_paths
+        assert len(shard_paths_test) == 1
         logger.info(f"Test dir Shard path {shard_paths_test}")
         ds = ResumableShardedLMSequenceDataset(cfg=config, split="train")
         shard_paths_train = ds.shard_paths
-        logger.info(f"Train dir Shard path {shard_paths_train}")
+        assert len(shard_paths_train) == 49
+        # successfully tests
+        # logger.info(f"Train dir Shard path {shard_paths_train}")
 
-        # dl = make_ddp_dataloader(cfg=config)
-        # train_dl = dl["train_dl"]
-        # test_dl = dl["test_dl"]
+        torch.cuda.manual_seed_all(config.seed)
+        dl = make_ddp_dataloader(cfg=config)
+        train_dl = dl["train_dl"]
+        test_dl = dl["test_dl"]
+        x, y = next(iter(train_dl))
+        x = x.to(device) # x, y should be (16, 1024) tensors
+        y = y.to(device)
+        logger.info(f"X shape: {x.shape}")
+        logger.info(f"y shape: {y.shape}")
+        # Confirm x and y are of shape (B, T)
+        assert torch.equal(torch.tensor(x.shape), torch.tensor([config.batch_size, config.block_size]))
+        assert torch.equal(torch.tensor(y.shape), torch.tensor([config.batch_size, config.block_size]))
         # logger.info(f"Shard token counts {ds.shard_token_counts}")
         # logger.info(f"Total tokens {ds.total_tokens}")
         # logger.info(f"Shard start indices: {ds.shard_start_indices}")
