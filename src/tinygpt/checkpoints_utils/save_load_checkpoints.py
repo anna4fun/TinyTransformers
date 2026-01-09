@@ -11,7 +11,6 @@ def save_training_checkpoint(
         optimizer: torch.optim.Optimizer,
         scheduler: Optional,
         epoch: int,
-        loss: float,
         current_step: int,
 ):
     """Save full checkpoint (model + optimizer + data progress)"""
@@ -29,7 +28,6 @@ def save_training_checkpoint(
         "optimizer_state_dict": optimizer.state_dict(),
         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
         "epoch": epoch,
-        "loss": loss,
         "cfg": cfg
     }
 

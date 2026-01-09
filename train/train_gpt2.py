@@ -254,11 +254,7 @@ if __name__ == '__main__':
         torch.multiprocessing.set_start_method('spawn', force=True)
     try:
         train_gpt2()
-    # except KeyboardInterrupt:
-    #     print("\n⚠️ Training interrupted (Ctrl+C)! Saving final checkpoint...")
-    #     torch.save(checkpoint, checkpoint_path)
-    #     print("✅ Interruption checkpoint saved. Initiating shutdown...")
     finally:
         time.sleep(5)  # wait for disk write
         print("Initiating cloud GPU instance shutdown...")
-        os.system("poweroff")
+        os.system("init 0")
