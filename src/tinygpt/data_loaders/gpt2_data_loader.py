@@ -199,11 +199,16 @@ class ResumableShardedLMSequenceDataset(Dataset):
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor, torch.Tensor]:
         """Get a single sequence of (seq_length + 1) tokens (for input/target)"""
-        # Ensure we have enough tokens left in current file for 1 sequence
-        while self.current_pos + self.block_size + 1 > len(self.current_tokens):
-            # Move to next file
+        target_length = self.block_size + 1
+        # Ensure all batches contains enough tokens
+        while len(self.current_tokens) - self.current_pos < target_length:
+            # keep all the tokens of the current shard
+            remaining_tokens = self.current_tokens[self.current_pos:]
+            # load tokens from next shard
             self.current_file_idx = (self.current_file_idx + 1) % len(self.shard_paths)
-            self.current_tokens = self._load_file(self.current_file_idx)
+            new_tokens = self._load_file(self.current_file_idx)
+            # stitch old and new shard's tokens together
+            self.current_tokens = torch.cat([remaining_tokens, new_tokens], dim=0)
             self.current_pos = 0
 
         # Extract a sequence of (seq_length + 1) tokens
@@ -211,8 +216,7 @@ class ResumableShardedLMSequenceDataset(Dataset):
         buf = self.current_tokens[self.current_pos: self.current_pos + self.block_size + 1]
         x = buf[:-1]  # inputs
         y = buf[1:]   # targets
-        self.current_pos += self.block_size  # Move forward for next sequence
-        # Convert to PyTorch tensor (GPT-2 expects long tensors)
+        self.current_pos += self.block_size  # Move current_pos for next sequence
         return x, y
 
     def _save_resume_state(self, current_file_idx: int, current_pos: int):
@@ -224,13 +228,13 @@ class ResumableShardedLMSequenceDataset(Dataset):
             "split": self.split
         }
         os.makedirs(self.cfg.checkpoint_dir, exist_ok=True)
-        state_path = os.path.join(self.cfg.checkpoint_dir, "resume_state.json")
+        state_path = os.path.join(self.cfg.checkpoint_dir, "data_loder_resume_state.json")
         with open(state_path, "w") as f:
             json.dump(resume_state, f)
 
     def _load_resume_state(self):
         """Load resume state from checkpoint"""
-        state_path = os.path.join(self.cfg.checkpoint_dir, "resume_state.json")
+        state_path = os.path.join(self.cfg.checkpoint_dir, "data_loder_resume_state.json")
         if not os.path.exists(state_path):
             print(f"No resume state found at {state_path} — starting fresh")
             return
@@ -238,9 +242,9 @@ class ResumableShardedLMSequenceDataset(Dataset):
         with open(state_path, "r") as f:
             resume_state = json.load(f)
 
-        self.resume_shard_idx = resume_state["resume_shard_idx"]
-        self.resume_seq_idx = resume_state["resume_seq_idx"]
-        print(f"Resumed from shard {self.resume_shard_idx}, sequence {self.resume_seq_idx}")
+        self.current_file_idx = resume_state["resume_shard_idx"]
+        self.current_pos = resume_state["resume_seq_idx"]
+        print(f"Resumed from shard {self.current_file_idx}, sequence {self.current_pos}")
 
 
 def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:

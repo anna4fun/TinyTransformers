@@ -41,8 +41,10 @@ def main():
     # ----------------------
     # DDP Initialization (distributed data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
+    ddp_initialized = False
     ddp = int(os.environ.get('RANK', -1)) != -1  # is this a ddp run?
     device, ddp_rank, ddp_local_rank, ddp_world_size, master_process = init_ddp(ddp)
+    ddp_initialized = ddp and dist.is_initialized()
     if device.startswith("cuda"):
         device_type = "cuda"
 
@@ -229,11 +231,20 @@ def main():
     # todo: save data config states
 
     # ----------------------
-    # 7. Final Logging
+    # 7. Final Logging and clean up
     # ----------------------
     total_training_time = time.time() - start_time
     swanlab.log({"total_training_time": total_training_time})
-    print(f"Training finished! Total time: {total_training_time:.2f}s")
+    logger.info(f"Training finished! Total time: {total_training_time:.2f}s")
+    # Important: clean up Dataloader multi-processor
+    if 'train_dl' in locals():
+        del train_dl
+    if 'test_dl' in locals():
+        del test_dl
+    torch.cuda.empty_cache()  # clean cache
+    if ddp_initialized:
+        dist.destroy_process_group()
+        logger.info("DDP process group destroyed successfully")
 
 
 if __name__ == '__main__':

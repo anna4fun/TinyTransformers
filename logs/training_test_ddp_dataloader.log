@@ -105,3 +105,70 @@
 2026-01-08 22:18:11 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
 2026-01-08 22:18:11 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
 2026-01-08 22:18:11 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-08 22:33:38 | GPU 0 | INFO | Start a new round
+2026-01-08 22:33:38 | GPU 0 | INFO | Manual test file read
+2026-01-08 22:33:38 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-08 22:33:38 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-08 22:33:38 | GPU 0 | INFO | now do the dataset class test
+2026-01-08 22:33:39 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-08 22:33:42 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-08 22:33:42 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-08 22:33:42 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:05:39 | GPU 0 | INFO | Start a new round
+2026-01-09 15:05:39 | GPU 0 | INFO | Manual test file read
+2026-01-09 15:05:39 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-09 15:05:39 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-09 15:05:39 | GPU 0 | INFO | now do the dataset class test
+2026-01-09 15:05:40 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-09 15:05:43 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-09 15:05:43 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-09 15:05:43 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:05:43 | GPU 0 | INFO | Debug - X[0,0:6]: [  464 13362 12091   198  1890   477]
+2026-01-09 15:05:43 | GPU 0 | INFO | Debug - Y[0,0:6]: [13362 12091   198  1890   477   262]
+2026-01-09 15:05:43 | GPU 0 | ERROR | Offset check failed: X and Y offset mismatch! X[0,0:5]=tensor([  464, 13362, 12091,   198,  1890]), Y[0,1:6]=tensor([12091,   198,  1890,   477,   262])
+assert False
+ +  where False = <built-in method equal of type object at 0x7f504e4d8fa0>(tensor([  464, 13362, 12091,   198,  1890]), tensor([12091,   198,  1890,   477,   262]))
+ +    where <built-in method equal of type object at 0x7f504e4d8fa0> = torch.equal
+2026-01-09 15:25:33 | GPU 0 | INFO | Start a new round
+2026-01-09 15:25:33 | GPU 0 | INFO | Manual test file read
+2026-01-09 15:25:33 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-09 15:25:33 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-09 15:25:33 | GPU 0 | INFO | now do the dataset class test
+2026-01-09 15:25:34 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-09 15:25:37 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-09 15:25:37 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-09 15:25:37 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:26:52 | GPU 0 | INFO | Start a new round
+2026-01-09 15:26:52 | GPU 0 | INFO | Manual test file read
+2026-01-09 15:26:52 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-09 15:26:52 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-09 15:26:52 | GPU 0 | INFO | now do the dataset class test
+2026-01-09 15:26:53 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-09 15:26:56 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-09 15:26:56 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-09 15:26:56 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:26:56 | GPU 0 | INFO | Debug - X[0,1:10]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:26:56 | GPU 0 | INFO | Debug - Y[0,0:9]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:42:12 | GPU 0 | INFO | Start a new round
+2026-01-09 15:42:12 | GPU 0 | INFO | Manual test file read
+2026-01-09 15:42:12 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-09 15:42:12 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-09 15:42:12 | GPU 0 | INFO | now do the dataset class test
+2026-01-09 15:42:13 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-09 15:42:16 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-09 15:42:16 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-09 15:42:16 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:42:16 | GPU 0 | INFO | Debug - X[0,1:10]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:42:16 | GPU 0 | INFO | Debug - Y[0,0:9]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:43:19 | GPU 0 | INFO | Start a new round
+2026-01-09 15:43:19 | GPU 0 | INFO | Manual test file read
+2026-01-09 15:43:19 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/train/fineweb_edu_0030.npy
+2026-01-09 15:43:19 | GPU 0 | INFO | /root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy
+2026-01-09 15:43:19 | GPU 0 | INFO | now do the dataset class test
+2026-01-09 15:43:20 | GPU 0 | INFO | Test dir Shard path [PosixPath('/root/autodl-tmp/kaggle-fineweb/test/fineweb_edu_0049.npy')]
+2026-01-09 15:43:22 | GPU 0 | INFO | 1st row of X: tensor([  464, 13362, 12091,   198,  1890], device='cuda:0')
+2026-01-09 15:43:22 | GPU 0 | INFO | 2nd row of X: tensor([  286,   262,  1171,    12, 37004], device='cuda:0')
+2026-01-09 15:43:22 | GPU 0 | INFO | 16th  row of X: tensor([ 883,  508, 3357,  706,  345], device='cuda:0')
+2026-01-09 15:43:22 | GPU 0 | INFO | Debug - X[0,1:10]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:43:22 | GPU 0 | INFO | Debug - Y[0,0:9]: [13362 12091   198  1890   477   262  1842    11 19661]
+2026-01-09 15:43:22 | GPU 0 | INFO | x row 1 and x row 2 are continuous within a batch

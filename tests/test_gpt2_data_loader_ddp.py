@@ -78,8 +78,19 @@ def test_resumeable_dataset():
             logger.info(f"1st row of X: {x[0, 0:5]}")
             logger.info(f"2nd row of X: {x[1, 0:5]}")
             logger.info(f"16th  row of X: {x[15, 0:5]}")
+
             # Confirm x and y are 1 token off
-            assert torch.equal(x[0, 0:5], y[0, 1:6]), "X and Y are not 1 token offset"
+            assert torch.equal(x[0, 1:10], y[0, 0:9]), "X and Y are not 1 token offset" # Failed:because I compare the wrong part of x and y
+            # # first print
+            logger.info(f"Debug - X[0,1:10]: {x[0, 1:10].cpu().numpy()}")
+            logger.info(f"Debug - Y[0,0:9]: {y[0, 0:9].cpu().numpy()}")
+            # Confirm x row 1 and x row 2 are continuous within a batch
+            assert torch.equal(x[1,0], y[0, config.block_size-1]), "x row 1 and x row 2 are continuous within a batch"
+            logger.info(f"x row 1 and x row 2 are continuous within a batch")
+            # TODO: Test save _save_resume_state
+            # _save_resume_state()
+            # TODO: Test load_resume_state
+
     finally:
         # Important: clean up Dataloader multi-processor
         if 'train_dl' in locals():
