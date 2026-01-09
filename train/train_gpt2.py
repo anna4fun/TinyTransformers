@@ -35,7 +35,7 @@ def evaluate(model: GPT2, valid_loader: DataLoader, device):
         total_samples += batch_size
     return total_loss / max(1, total_samples) # in case of 0 sample
 
-def main():
+def train_gpt2():
     # ----------------------
     # 1. Setup Device and DDP
     # ----------------------
@@ -47,6 +47,8 @@ def main():
     ddp_initialized = ddp and dist.is_initialized()
     if device.startswith("cuda"):
         device_type = "cuda"
+    # todo: remember to update epoch
+    epoch = 1
 
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
@@ -54,8 +56,6 @@ def main():
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
                             num_workers=16*2)
     config_dict = dataclasses.asdict(config)
-
-    # todo: ddp_rank or ddp_local_rank?
     logger = setup_logger(cfg = config, train_name = "gpt2-shakespeare-v2-DDP", local_rank = ddp_local_rank)
 
     # All ranks (GPUs) must use the same seed to avoid non-determinism in DDP
@@ -129,11 +129,11 @@ def main():
     start_time = time.time()  # Track total training time
 
     # Load checkpoint (resume state)
-    resume = False
-    if resume:
-        resume_shard_idx, resume_seq_idx, start_epoch, start_loss = load_training_checkpoint(
-            cfg=config, model=model, optimizer=optimizer, scheduler=scheduler
-        )
+    # resume = False
+    # if resume:
+    #     resume_shard_idx, resume_seq_idx, start_epoch, start_loss = load_training_checkpoint(
+    #         cfg=config, model=model, optimizer=optimizer, scheduler=scheduler
+    #     )
         # TODO: how to let train set resume from logged idx
         # train_dataset.resume_shard_idx = resume_shard_idx
         # train_dataset.resume_seq_idx = resume_seq_idx
@@ -144,9 +144,10 @@ def main():
     log_every = model.config.eval_interval
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
-    # TODO: change steps with max_step in PROD
-    max_steps = 2 # Experiment time spend: 1M tokens: train time: ; 1 eval run time:
-    for i in range(max_steps):
+
+    start_step = 0 # TODO: change to checkpoint's last step + 1
+    max_steps = 2 # TODO: change steps with max_step in PROD # Experiment time spend: 1M tokens: train time: ; 1 eval run time:
+    for i in range(start_step, max_steps):
         t0 = time.time() # current time in seconds since the Unix epoch
 
         # Forward and Backward Path
@@ -220,15 +221,15 @@ def main():
         # Learning Rate scheduler update (happens after optimizer step)
         scheduler.step()
 
-    # ----------------------
-    # 6. Save model checkpoints per epoch
-    # To pause/resume training:
-    # * Save data progress (e.g., last processed shard + batch index) alongside model checkpoints.
-    # * Save model weights, optimizer state, scheduler state, and data state (shard/batch).
-    # ----------------------
-    # save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler)
-    # todo: bug: save_training_checkpoint missing 4 required positional arguments: 'shard_idx', 'seq_idx', 'epoch', and 'loss'
-    # todo: save data config states
+        # ----------------------
+        # 6. Save model checkpoints per 500 steps
+        # To pause/resume training:
+        # * Save data progress (e.g., last processed shard + batch index) alongside model checkpoints.
+        # * Save model weights, optimizer state, scheduler state, and data state (shard/batch).
+        # ----------------------
+        if i % log_every == 0 or i == 0:
+            save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler,
+                                 current_step=i, epoch=epoch)
 
     # ----------------------
     # 7. Final Logging and clean up
@@ -251,5 +252,13 @@ if __name__ == '__main__':
     freeze_support()
     if sys.platform == 'darwin':
         torch.multiprocessing.set_start_method('spawn', force=True)
-    main()
-    # todo: add shutdown
+    try:
+        train_gpt2()
+    # except KeyboardInterrupt:
+    #     print("\n⚠️ Training interrupted (Ctrl+C)! Saving final checkpoint...")
+    #     torch.save(checkpoint, checkpoint_path)
+    #     print("✅ Interruption checkpoint saved. Initiating shutdown...")
+    finally:
+        time.sleep(5)  # wait for disk write
+        print("Initiating cloud GPU instance shutdown...")
+        os.system("poweroff")

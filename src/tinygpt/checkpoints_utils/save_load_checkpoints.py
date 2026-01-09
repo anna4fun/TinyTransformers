@@ -9,17 +9,16 @@ def save_training_checkpoint(
         cfg: GPT2DataConfig,
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
-        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
-        shard_idx: int,
-        seq_idx: int,
+        scheduler: Optional,
         epoch: int,
-        loss: float
+        loss: float,
+        current_step: int,
 ):
     """Save full checkpoint (model + optimizer + data progress)"""
     os.makedirs(cfg.checkpoint_dir, exist_ok=True)
     checkpoint_path = os.path.join(
         cfg.checkpoint_dir,
-        f"ckpt_shard_{shard_idx}_epoch_{epoch}.pt"
+        f"ckpt_gpt2_epoch_{epoch}_{current_step}.pt"
     )
 
     # Save DDP model (use model.module for DDP-wrapped models)
@@ -29,8 +28,6 @@ def save_training_checkpoint(
         "model_state_dict": model_state,
         "optimizer_state_dict": optimizer.state_dict(),
         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
-        "resume_shard_idx": shard_idx,
-        "resume_seq_idx": seq_idx,
         "epoch": epoch,
         "loss": loss,
         "cfg": cfg
@@ -39,15 +36,6 @@ def save_training_checkpoint(
     # Only save from rank 0 (avoid duplicate checkpoints)
     if cfg.rank == 0:
         torch.save(checkpoint, checkpoint_path)
-        # Save resume state (separate JSON for easy loading)
-        resume_state = {
-            "resume_shard_idx": shard_idx,
-            "resume_seq_idx": seq_idx
-        }
-        with open(os.path.join(cfg.checkpoint_dir, "resume_state.json"), "w") as f:
-            json.dump(resume_state, f)
-        print(f"Checkpoint saved to {checkpoint_path}")
-
 
 def load_training_checkpoint(
         cfg: GPT2DataConfig,

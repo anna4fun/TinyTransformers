@@ -253,6 +253,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
     if cfg.ddp and not dist.is_initialized():
         dist.init_process_group(backend="nccl")  # NCCL for GPU DDP
 
+    # TODO: create validation set
     # Create train/test datasets (pre-split folders)
     train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
