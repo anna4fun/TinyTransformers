@@ -257,4 +257,4 @@ if __name__ == '__main__':
     finally:
         time.sleep(5)  # wait for disk write
         print("Initiating cloud GPU instance shutdown...")
-        os.system("init 0")
+        os.system("shutdown -h now")
