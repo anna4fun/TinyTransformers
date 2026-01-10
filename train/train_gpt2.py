@@ -56,20 +56,32 @@ def train_gpt2():
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
                             num_workers=16*2)
     config_dict = dataclasses.asdict(config)
-    logger = setup_logger(cfg = config, train_name = "gpt2-shakespeare-v2-DDP", local_rank = ddp_local_rank)
+    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-smoke-test", local_rank = ddp_local_rank)
 
+    # Complete deterministic
     # All ranks (GPUs) must use the same seed to avoid non-determinism in DDP
     torch.cuda.manual_seed(config.seed)
     torch.cuda.manual_seed_all(config.seed)
+    # Disable non-deterministic CUDA ops (critical for GPU)
+    # --------------------------
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  # Disable speed optimizations for determinism
+
+    # --------------------------
+    # Step 3: Seed YOUR CUSTOM DATALOADER (THE MOST IMPORTANT ONE!)
+    # --------------------------
+    # Create a seeded generator for the DataLoader
+    dl_generator = torch.Generator()
+    dl_generator.manual_seed(config.seed)
 
     # Initialize SwanLab
     swanlab.init(
         project="gpt2-training",  # Your project name
-        experiment_name="gpt2-shakespeare-v2-DDP",
+        experiment_name="gpt2-FineWeb-smoke-test",
         config=config_dict,  # Log hyperparameters
         mode="local",  # Use local mode (no cloud sync)
-        description = "GPT-2 124M experiment training on Shakespeare text",
-        tags = ["GPT2", "Experiment", "Shakespeare", "small dataset"],
+        description = "GPT-2 124M experiment training on FineWeb-edu dataset",
+        tags = ["GPT2", "Experiment", "FineWeb", "small dataset"],
     )
     # TODO: test DDP master process verification process
     logger.info(f"I am GPU {ddp_rank}")
@@ -79,10 +91,10 @@ def train_gpt2():
     # 3. Setup Data(on CPU), Model, Optimizer
     # ----------------------
     # TODO: modify dataloader for DDP: process_rank=ddp_rank, num_processes=ddp_world_size
-    # dl = make_dataloader(config)
-    dl = make_ddp_dataloader(config)
+    # DataLoader with seeded shuffle
+    dl = make_ddp_dataloader(config, g=dl_generator)
     train_dl = dl["train_dl"]
-    # valid_dl = dl["valid_dl"]
+    valid_dl = dl["val_dl"]
     test_dl = dl["test_dl"]
 
     # Applies TensorFloat32 operation only to CUDA matrix multiplication operations
@@ -128,15 +140,12 @@ def train_gpt2():
     best_valid_loss = float('inf')
     start_time = time.time()  # Track total training time
 
-    # Load checkpoint (resume state)
+    # TODO: Load checkpoint (resume state)
     # resume = False
     # if resume:
     #     resume_shard_idx, resume_seq_idx, start_epoch, start_loss = load_training_checkpoint(
     #         cfg=config, model=model, optimizer=optimizer, scheduler=scheduler
     #     )
-        # TODO: how to let train set resume from logged idx
-        # train_dataset.resume_shard_idx = resume_shard_idx
-        # train_dataset.resume_seq_idx = resume_seq_idx
 
     # ----------------------
     # 5. Training Loop
@@ -206,17 +215,17 @@ def train_gpt2():
             "Learning Rate": float(scheduler.get_last_lr()[0]),
         }, step=i)
 
-        # if i == 0 or i % log_every == 9:
-        #     eval_loss = evaluate(model, valid_dl, device)
-        #     elapsed_time = time.time() - start_time  # Time since start in seconds
-        #     # Update the best validation loss
-        #     if eval_loss < best_valid_loss:
-        #         best_valid_loss = eval_loss
-        #     # Log train and validation loss
-        #     swanlab.log({
-        #         "Loss/valid_loss": eval_loss,
-        #         "Loss/best_valid_loss": best_valid_loss,
-        #     }, step=i)
+        if i == 0 or i % log_every == 0:
+            eval_loss = evaluate(model, valid_dl, device)
+            elapsed_time = time.time() - start_time  # Time since start in seconds
+            # Update the best validation loss
+            if eval_loss < best_valid_loss:
+                best_valid_loss = eval_loss
+            # Log train and validation loss
+            swanlab.log({
+                "Loss/valid_loss": eval_loss,
+                "Loss/best_valid_loss": best_valid_loss,
+            }, step=i)
 
         # Learning Rate scheduler update (happens after optimizer step)
         scheduler.step()
@@ -229,7 +238,7 @@ def train_gpt2():
         # ----------------------
         if i % log_every == 0 or i == 0:
             save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler,
-                                 current_step=i, epoch=epoch)
+                                      current_step=i, epoch=epoch, loss=loss_accum, global_step=i)
 
     # ----------------------
     # 7. Final Logging and clean up
@@ -240,6 +249,8 @@ def train_gpt2():
     # Important: clean up Dataloader multi-processor
     if 'train_dl' in locals():
         del train_dl
+    if 'valid_dl' in locals():
+        del valid_dl
     if 'test_dl' in locals():
         del test_dl
     torch.cuda.empty_cache()  # clean cache
@@ -252,6 +263,8 @@ if __name__ == '__main__':
     freeze_support()
     if sys.platform == 'darwin':
         torch.multiprocessing.set_start_method('spawn', force=True)
+    # The try/finally block will ensure the shutdown commands run
+    # when training success/ crash with error/ manually stopped/ hit max step or epoch
     try:
         train_gpt2()
     finally:

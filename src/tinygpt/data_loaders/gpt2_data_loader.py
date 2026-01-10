@@ -9,7 +9,8 @@ from typing import Dict, Tuple, List
 import numpy as np
 import torch
 from datasets import tqdm, load_from_disk, load_dataset
-from torch.utils.data import Dataset, DataLoader, DistributedSampler
+from torch import Generator
+from torch.utils.data import Dataset, DataLoader, DistributedSampler, random_split
 import torch.distributed as dist
 from tinygpt.configs.config import GPT2DataConfig
 import tiktoken
@@ -219,35 +220,8 @@ class ResumableShardedLMSequenceDataset(Dataset):
         self.current_pos += self.block_size  # Move current_pos for next sequence
         return x, y
 
-    def _save_resume_state(self, current_file_idx: int, current_pos: int):
-        """Save resume state (last processed shard + sequence index)"""
-        resume_state = {
-            "resume_shard_idx": current_file_idx,
-            "resume_seq_idx": current_pos,
-            "shard_paths": self.shard_paths,
-            "split": self.split
-        }
-        os.makedirs(self.cfg.checkpoint_dir, exist_ok=True)
-        state_path = os.path.join(self.cfg.checkpoint_dir, "data_loder_resume_state.json")
-        with open(state_path, "w") as f:
-            json.dump(resume_state, f)
 
-    def _load_resume_state(self):
-        """Load resume state from checkpoint"""
-        state_path = os.path.join(self.cfg.checkpoint_dir, "data_loder_resume_state.json")
-        if not os.path.exists(state_path):
-            print(f"No resume state found at {state_path} — starting fresh")
-            return
-
-        with open(state_path, "r") as f:
-            resume_state = json.load(f)
-
-        self.current_file_idx = resume_state["resume_shard_idx"]
-        self.current_pos = resume_state["resume_seq_idx"]
-        print(f"Resumed from shard {self.current_file_idx}, sequence {self.current_pos}")
-
-
-def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
+def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoader]:
     """Build DDP-compatible DataLoaders with resumable training"""
     # Initialize DDP (call this once at the start of training)
     if cfg.ddp and not dist.is_initialized():
@@ -255,7 +229,11 @@ def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
 
     # TODO: create validation set
     # Create train/test datasets (pre-split folders)
-    train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
+    full_train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
+    val_split_ratio = getattr(cfg, "val_split", 0.1)  # 10% val by default (add to your GPT2DataConfig)
+    val_size = int(len(full_train_dataset) * val_split_ratio)
+    train_size = len(full_train_dataset) - val_size
+    train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
     train_dl = DataLoader(train_dataset,
                           batch_size=cfg.batch_size,
@@ -263,20 +241,31 @@ def make_ddp_dataloader(cfg: GPT2DataConfig) -> Dict[str, DataLoader]:
                           num_workers=cfg.num_workers,
                           pin_memory=True,
                           drop_last=False,
-                          persistent_workers=True if cfg.num_workers > 0 else False
+                          persistent_workers=True if cfg.num_workers > 0 else False,
+                          generator=g,  # locks the DataLoader's shuffle order
                           )
+    val_dl = DataLoader(val_dataset,
+                          batch_size=cfg.batch_size,
+                          # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+                          num_workers=cfg.num_workers,
+                          pin_memory=True,
+                          drop_last=False,
+                          persistent_workers=True if cfg.num_workers > 0 else False,
+                          generator=g,
+                        )
     test_dl = DataLoader(test_dataset,
                           batch_size=cfg.batch_size,
                           # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
                           num_workers=cfg.num_workers,
                           pin_memory=True,
                           drop_last=False,
-                          persistent_workers=True if cfg.num_workers > 0 else False
-                          )
+                          persistent_workers=True if cfg.num_workers > 0 else False,
+                          generator=g,
+                         )
     # DDP
     # train_dl = build_dl(train_dataset, "train")
     # test_dl = build_dl(test_dataset, "test")
-    return dict(train_dl=train_dl, test_dl=test_dl)
+    return dict(train_dl=train_dl, test_dl=test_dl, val_dl=val_dl)
 
 # -------------------------- DDP DataLoader Builder --------------------------
 # DDP: Use DistributedSampler (critical for batch splitting across GPUs)

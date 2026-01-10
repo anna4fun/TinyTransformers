@@ -54,7 +54,7 @@ class GPT2DataConfig:
     world_size: int = 1
     resume_checkpoint: Optional[str] = None
     log_level: str = "DEBUG"  # DEBUG/INFO/WARNING/ERROR
-    shuffle: bool = True
+    shuffle: bool = True  # standard for GPT2 training to avoid overfitting
     seed: int = 1337
     max_iters: int = 5000
     eval_interval: int = 500
@@ -67,6 +67,7 @@ class GPT2DataConfig:
     n_embd: int = 768  # 768=64x12
     n_layer: int = 12
     n_head: int = 12
+    val_split: float = 0.1
 
 @dataclass(frozen=True)
 class ExperimentConfig:

@@ -50,11 +50,14 @@ def test_resumeable_dataset():
             torch.manual_seed(config.seed)
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(config.seed)
-
+            dl_generator = torch.Generator()
+            dl_generator.manual_seed(config.seed)
             # create dataloader objects
-            dl = make_ddp_dataloader(cfg=config)
+            dl = make_ddp_dataloader(cfg=config, g=dl_generator)
             train_dl = dl["train_dl"]
+            valid_dl = dl["val_dl"]
             test_dl = dl["test_dl"]
+            # Train data loder
             # Safe move
             try:
                 train_iter = iter(train_dl)
@@ -87,6 +90,25 @@ def test_resumeable_dataset():
             # Confirm x row 1 and x row 2 are continuous within a batch
             assert torch.equal(x[1,0], y[0, config.block_size-1]), "x row 1 and x row 2 are continuous within a batch"
             logger.info(f"x row 1 and x row 2 are continuous within a batch")
+
+            # Valid data loader
+            try:
+                val_iter = iter(valid_dl)
+                vx, vy = next(val_iter)
+            except StopIteration:
+                pytest.fail("Valid DataLoader is empty!")
+
+            assert vx.shape == (config.batch_size, config.block_size), \
+                f"X shape mismatch: expected {(config.batch_size, config.block_size)}, got {vx.shape}"
+            assert vy.shape == (config.batch_size, config.block_size), \
+                f"Y shape mismatch: expected {(config.batch_size, config.block_size)}, got {vy.shape}"
+            # Confirm 1st and 2nd sequence are not the same
+            logger.info(f"1st row of X: {vx[0, 0:5]}")
+            logger.info(f"2nd row of X: {vx[1, 0:5]}")
+            # Confirm x and y are 1 token off
+            assert torch.equal(vx[0, 1:10], vy[0, 0:9]), "X and Y are not 1 token offset"
+            logger.info(f"Valid set passed")
+
             # TODO: Test save _save_resume_state
             # _save_resume_state()
             # TODO: Test load_resume_state

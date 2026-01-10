@@ -11,24 +11,28 @@ def save_training_checkpoint(
         optimizer: torch.optim.Optimizer,
         scheduler: Optional,
         epoch: int,
-        current_step: int,
+        loss: float,
+        global_step: int,
 ):
     """Save full checkpoint (model + optimizer + data progress)"""
     os.makedirs(cfg.checkpoint_dir, exist_ok=True)
     checkpoint_path = os.path.join(
         cfg.checkpoint_dir,
-        f"ckpt_gpt2_epoch_{epoch}_{current_step}.pt"
+        f"ckpt_gpt2_epoch_{epoch}_{global_step}.pt"
     )
 
     # Save DDP model (use model.module for DDP-wrapped models)
+    # Save model weights
     model_state = model.module.state_dict() if cfg.ddp else model.state_dict()
 
     checkpoint = {
         "model_state_dict": model_state,
-        "optimizer_state_dict": optimizer.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(), # (**MOST IMPORTANT FOR RESUME - EASILY FORGOTTEN**)
         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
         "epoch": epoch,
-        "cfg": cfg
+        "cfg": cfg,
+        "loss": loss,
+        "global_step": global_step
     }
 
     # Only save from rank 0 (avoid duplicate checkpoints)
