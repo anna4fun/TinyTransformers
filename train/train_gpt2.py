@@ -60,7 +60,6 @@ def train_gpt2():
 
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
-    # todo: add resume checkpoints
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
                             num_workers=16*2, ddp=ddp_initialized, resume_checkpoint=True)
     config_dict = dataclasses.asdict(config)
@@ -99,7 +98,6 @@ def train_gpt2():
         logger.info(f"Master Process {ddp_rank} initialized SwanLab successfully")
     # TODO: test DDP master process verification process
     logger.info(f"I am GPU {ddp_rank}")
-    # import sys; sys.exit(0)
 
     # ----------------------
     # 4. Model Setup (GPT2 + Optimizer + LR scheduler +  DDP + Compile)
@@ -123,10 +121,10 @@ def train_gpt2():
 
     # Initialize training progress variables (defaults for scratch training)
     start_step = 0
-    max_steps = 10  # TODO: change steps with max_step in PROD # Experiment time spend: 1M tokens: train time: ; 1 eval run time:
+    max_steps = 501  # TODO: change steps with max_step in PROD
 
     # Resume from checkpoints or start fresh
-    checkpoint_name = "ckpt_gpt2_epoch_1_1.pt" # todo: change to desired ckpt
+    checkpoint_name = "ckpt_gpt2_epoch_1_9.pt" # todo: change to desired ckpt
     checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
     if config.resume_checkpoint and os.path.exists(checkpoint_path):
         # Load the checkpoint
@@ -172,19 +170,19 @@ def train_gpt2():
     if master_process:
         logger.info(f"Total desired batch size: {total_batch_size}")
         logger.info(f"=> Calculated gradient accumulation steps: {gradient_accumulation_steps}")
+
     # ----------------------
     # 6. Training Tracking Variables and load from resume state
     # ----------------------
     best_valid_loss = float('inf')
     start_time = time.time()  # Track total training time
-    # TODO: Load checkpoint (resume state)
     log_every = model.config.eval_interval
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
-
     logger.info(f"Starting training from {start_step} steps to {max_steps} steps")
+
     # ----------------------
-    # 7. MAIN TRAINING LOOP (ALL BUGS FIXED!)
+    # 7. Main Training Loop
     # ----------------------
     for i in range(start_step, max_steps):
         t0 = time.time() # current time in seconds since the Unix epoch
