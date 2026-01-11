@@ -243,6 +243,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           drop_last=False,
                           persistent_workers=True if cfg.num_workers > 0 else False,
                           generator=g,  # locks the DataLoader's shuffle order
+                          shuffle=True
                           )
     val_dl = DataLoader(val_dataset,
                           batch_size=cfg.batch_size,
@@ -252,6 +253,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           drop_last=False,
                           persistent_workers=True if cfg.num_workers > 0 else False,
                           generator=g,
+                          shuffle=False
                         )
     test_dl = DataLoader(test_dataset,
                           batch_size=cfg.batch_size,
@@ -261,6 +263,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           drop_last=False,
                           persistent_workers=True if cfg.num_workers > 0 else False,
                           generator=g,
+                          shuffle=False
                          )
     # DDP
     # train_dl = build_dl(train_dataset, "train")
