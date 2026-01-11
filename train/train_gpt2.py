@@ -23,7 +23,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 
 @torch.no_grad()
-def evaluate(model: GPT2, valid_loader: DataLoader, device, max_val_batches=8):
+def evaluate(model: GPT2, valid_loader: DataLoader, device, max_val_batches=100):
+    # Total of 1000,000 seq in val_dl, pick 100 for validation every time, validate for 40 times
     model.eval()
     total_loss, total_samples = 0.0, 0
     valid_iter = iter(valid_loader)  # use a persistent iterator
@@ -63,7 +64,7 @@ def train_gpt2():
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
                             num_workers=16*2, ddp=ddp_initialized, resume_checkpoint=True)
     config_dict = dataclasses.asdict(config)
-    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-test-resume", local_rank = ddp_local_rank)
+    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-val100samples", local_rank = ddp_local_rank)
 
     # Complete deterministic
     # All ranks (GPUs) must use the same seed to avoid non-determinism in DDP
@@ -89,7 +90,7 @@ def train_gpt2():
     if master_process:
         swanlab_run = swanlab.init(
             project="gpt2-training",  # Your project name
-            experiment_name="gpt2-FineWeb-smoke-test-resume-ckpt",
+            experiment_name="gpt2-FineWeb-prod-2-4k",
             config=config_dict,  # Log hyperparameters
             mode="local",  # Use local mode (no cloud sync)
             description = "GPT-2 124M experiment training on FineWeb-edu dataset",
@@ -124,7 +125,7 @@ def train_gpt2():
     max_steps = 501  # TODO: change steps with max_step in PROD
 
     # Resume from checkpoints or start fresh
-    checkpoint_name = "ckpt_gpt2_epoch_1_9.pt" # todo: change to desired ckpt
+    checkpoint_name = "ckpt_gpt2_epoch_1_2000.pt" # todo: change to desired ckpt
     checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
     if config.resume_checkpoint and os.path.exists(checkpoint_path):
         # Load the checkpoint
@@ -249,11 +250,11 @@ def train_gpt2():
             "Learning Rate": float(scheduler.get_last_lr()[0]),
         }, step=i)
 
-        if (i % log_every == 0 or i == 0) and master_process:
+        if (i % log_every == 0 or i == 0 or i == max_steps-1) and master_process:
             # SWITCH TO SPEED MODE FOR EVAL: enable benchmark + disable strict determinism
             t3 = time.time()
             torch.backends.cudnn.benchmark = True
-            eval_loss = evaluate(model, valid_dl, device, max_val_batches=8)
+            eval_loss = evaluate(model, valid_dl, device, max_val_batches=100)
 
             # Update the best validation loss
             if eval_loss < best_valid_loss:

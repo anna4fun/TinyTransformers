@@ -250,10 +250,10 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
                           num_workers=cfg.num_workers,
                           pin_memory=True,
-                          drop_last=False,
+                          drop_last=False, # Dropping samples leads to a biased validation score
                           persistent_workers=True if cfg.num_workers > 0 else False,
                           generator=g,
-                          shuffle=False
+                          shuffle=True # reshuffle to avoid overfitting to the fixed subset of validation, unbiased estimator
                         )
     test_dl = DataLoader(test_dataset,
                           batch_size=cfg.batch_size,
