@@ -11,7 +11,7 @@ import os
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
-from tinygpt.checkpoints_utils.save_load_checkpoints import save_training_checkpoint, load_training_checkpoint
+from tinygpt.checkpoints_utils.save_load_checkpoints import save_training_checkpoint
 from tinygpt.distributed_utils.setup_ddp_init import init_ddp
 from tinygpt.logger.setup_logger import setup_logger
 from tinygpt.models.gpt2 import GPT2
@@ -62,9 +62,9 @@ def train_gpt2():
     # ----------------------
     # todo: add resume checkpoints
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
-                            num_workers=16*2, ddp=ddp_initialized)
+                            num_workers=16*2, ddp=ddp_initialized, resume_checkpoint=True)
     config_dict = dataclasses.asdict(config)
-    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-smoke-test", local_rank = ddp_local_rank)
+    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-test-resume", local_rank = ddp_local_rank)
 
     # Complete deterministic
     # All ranks (GPUs) must use the same seed to avoid non-determinism in DDP
@@ -90,7 +90,7 @@ def train_gpt2():
     if master_process:
         swanlab_run = swanlab.init(
             project="gpt2-training",  # Your project name
-            experiment_name="gpt2-FineWeb-smoke-test-full-batch",
+            experiment_name="gpt2-FineWeb-smoke-test-resume-ckpt",
             config=config_dict,  # Log hyperparameters
             mode="local",  # Use local mode (no cloud sync)
             description = "GPT-2 124M experiment training on FineWeb-edu dataset",
@@ -102,7 +102,7 @@ def train_gpt2():
     # import sys; sys.exit(0)
 
     # ----------------------
-    # 4. Model Setup (GPT2 + DDP + Compile)
+    # 4. Model Setup (GPT2 + Optimizer + LR scheduler +  DDP + Compile)
     # ----------------------
     # Applies TensorFloat32 operation only to CUDA matrix multiplication operations
     # TF32 is the precision-reduced variant of FP32, but not half-precision(FP16/BF16)
@@ -111,6 +111,41 @@ def train_gpt2():
     # Create the model and move model to the GPU device
     model = GPT2(config)
     model.to(device)
+    # Optimizer sits outside the iteration loop
+    # start with the max lr=6e-4
+    optimizer = model.configure_optimizers(weight_decay=0.1, lr=model.config.learning_rate, device=device)
+
+    # learning rate scheduler
+    # Number of steps to go through 1 epoch
+    max_steps = 19073  # 19,073 steps is ~1 epoch, if data is 10B tokens and batch size 0.5M tokens
+    warmup_steps = 715
+    scheduler = CosineAnnealingLR(optimizer, T_max=max_steps, eta_min=model.config.learning_rate * 0.1)
+
+    # Initialize training progress variables (defaults for scratch training)
+    start_step = 0
+    max_steps = 10  # TODO: change steps with max_step in PROD # Experiment time spend: 1M tokens: train time: ; 1 eval run time:
+
+    # Resume from checkpoints or start fresh
+    checkpoint_name = "ckpt_gpt2_epoch_1_1.pt" # todo: change to desired ckpt
+    checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
+    if config.resume_checkpoint and os.path.exists(checkpoint_path):
+        # Load the checkpoint
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        # Restore ALL critical states
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+        # Restore training progress
+        start_epoch = checkpoint["epoch"]
+        start_step = checkpoint["global_step"] + 1 # iterate to the next dataloder batch
+        last_loss = checkpoint["loss"]
+        logger.info(f"Resumed training from epoch {start_epoch}, global step {start_step}, last loss: {last_loss:.4f}")
+    elif config.resume_checkpoint and not os.path.exists(checkpoint_path):
+        print(f"No checkpoint found at {checkpoint_path}")
+        sys.exit(0)
+    else:
+        print("Starting training from scratch")
 
     # Compile model speed up training, compilation itself consume some time
     # Efficiency gain comes from reducing Python overhead and GPU R/W
@@ -127,30 +162,16 @@ def train_gpt2():
         logger.info("Model compiled with torch.compile()")
 
     # ----------------------
-    # 5. Optimizer + Scheduler
+    # 5. Gradient accumulation
     # ----------------------
     # Gradient Accumulations to fit GPT3 paper - GPT3 125M parameter model batch size 0.5M
     total_batch_size = 524288  # 2**19, closest with 0.5M
     assert total_batch_size % config.batch_size * config.block_size == 0
     gradient_accumulation_steps = int(total_batch_size / (config.batch_size * config.block_size)) # 32
-    # todo: delete after test
-    # gradient_accumulation_steps = 2
     logger.info(f"✅ Total batch size: {total_batch_size} | Gradient Accum Steps: {gradient_accumulation_steps}")
     if master_process:
         logger.info(f"Total desired batch size: {total_batch_size}")
         logger.info(f"=> Calculated gradient accumulation steps: {gradient_accumulation_steps}")
-
-    # Number of steps to go through 1 epoch
-    max_steps = 19073 # 19,073 steps is ~1 epoch, if data is 10B tokens and batch size 0.5M tokens
-    warmup_steps = 715
-
-    # Optimizer sits outside the iteration loop
-    # start with the max lr=6e-4
-    optimizer = model.configure_optimizers(weight_decay=0.1, lr=model.config.learning_rate, device=device)
-
-    # learning rate scheduler
-    scheduler = CosineAnnealingLR(optimizer, T_max=max_steps, eta_min=model.config.learning_rate * 0.1)
-
     # ----------------------
     # 6. Training Tracking Variables and load from resume state
     # ----------------------
@@ -161,9 +182,7 @@ def train_gpt2():
     train_iter = iter(train_dl) # use a persistent iterator
     model.train() # todo: what does .train() do?
 
-    start_step = 0 # TODO: change to checkpoint's last step + 1
-    max_steps = 2 # TODO: change steps with max_step in PROD # Experiment time spend: 1M tokens: train time: ; 1 eval run time:
-    logger.info(f"Starting training from {start_step} steps")
+    logger.info(f"Starting training from {start_step} steps to {max_steps} steps")
     # ----------------------
     # 7. MAIN TRAINING LOOP (ALL BUGS FIXED!)
     # ----------------------
@@ -234,16 +253,19 @@ def train_gpt2():
 
         if (i % log_every == 0 or i == 0) and master_process:
             # SWITCH TO SPEED MODE FOR EVAL: enable benchmark + disable strict determinism
+            t3 = time.time()
             torch.backends.cudnn.benchmark = True
             eval_loss = evaluate(model, valid_dl, device, max_val_batches=8)
-            elapsed_time = time.time() - start_time  # Time since start in seconds
+
             # Update the best validation loss
             if eval_loss < best_valid_loss:
                 best_valid_loss = eval_loss
+            eval_time = time.time() - t3
             # Log train and validation loss
             swanlab.log({
                 "Loss/valid_loss": eval_loss,
                 "Loss/best_valid_loss": best_valid_loss,
+                "Time/eval_time": eval_time,
             }, step=i)
             # SWITCH BACK TO DETERMINISTIC MODE FOR TRAINING (critical!)
             torch.backends.cudnn.benchmark = False
@@ -258,9 +280,9 @@ def train_gpt2():
         # * Save data progress (e.g., last processed shard + batch index) alongside model checkpoints.
         # * Save model weights, optimizer state, scheduler state, and data state (shard/batch).
         # ----------------------
-        if (i % log_every == 0 or i == 0) and master_process:
+        if (i % log_every == 0 or i == 0 or i == max_steps-1) and master_process:
             save_training_checkpoint(cfg=config, model=model, optimizer=optimizer, scheduler=scheduler,
-                                    epoch=epoch, loss=loss_accum, global_step=i)
+                                     epoch=epoch, loss=loss_accum, global_step=i, ddp_initialized=ddp_initialized)
 
         # Prevent VRAM fragmentation: clean cache every 100 steps
         if i % 100 == 0:

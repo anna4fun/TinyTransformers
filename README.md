@@ -75,6 +75,10 @@ What I want:
 - DDP training with 1 and 2 GPUs, with model checkpoints, tested with simple NN first
 - Continue training from previous checkpoints, tested with simple NN first
 
+**2025/01/11**
+Invisible CPU zoombi, after auto shutdown enabled, consume all the resources.
+Use a small subset of validation set for validation, saving time! ( validation with a small subset is statistically sufficient for tracking loss trends / early stopping / model improvement.)
+
 ## Blogs:
 ### Attention is All You Need readout
 1. [Done] Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)
