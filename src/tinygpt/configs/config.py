@@ -52,7 +52,7 @@ class GPT2DataConfig:
     ddp: bool = False
     rank: int = 0
     world_size: int = 1
-    resume_checkpoint: Optional[str] = None
+    resume_checkpoint: bool = False
     log_level: str = "DEBUG"  # DEBUG/INFO/WARNING/ERROR
     shuffle: bool = True  # standard for GPT2 training to avoid overfitting
     seed: int = 1337
