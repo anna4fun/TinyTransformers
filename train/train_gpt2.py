@@ -90,11 +90,11 @@ def train_gpt2():
     if master_process:
         swanlab_run = swanlab.init(
             project="gpt2-training",  # Your project name
-            experiment_name="gpt2-FineWeb-prod-2-4k",
+            experiment_name="gpt2-FineWeb-prod-2-11k",
             config=config_dict,  # Log hyperparameters
             mode="local",  # Use local mode (no cloud sync)
-            description = "GPT-2 124M experiment training on FineWeb-edu dataset",
-            tags = ["GPT2", "Experiment", "FineWeb", "small dataset"],
+            description = "GPT-2 124M training on FineWeb-edu dataset",
+            tags = ["GPT2", "Prod", "FineWeb", "10B dataset"],
         )
         logger.info(f"Master Process {ddp_rank} initialized SwanLab successfully")
     # TODO: test DDP master process verification process
@@ -122,10 +122,10 @@ def train_gpt2():
 
     # Initialize training progress variables (defaults for scratch training)
     start_step = 0
-    max_steps = 501  # TODO: change steps with max_step in PROD
+    max_steps = 12001  # TODO: change steps with max_step in PROD # 2k - 11k should take 11 hrs
 
     # Resume from checkpoints or start fresh
-    checkpoint_name = "ckpt_gpt2_epoch_1_2000.pt" # todo: change to desired ckpt
+    checkpoint_name = "ckpt_gpt2_epoch_1_7500.pt" # todo: change to desired ckpt
     checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
     if config.resume_checkpoint and os.path.exists(checkpoint_path):
         # Load the checkpoint
