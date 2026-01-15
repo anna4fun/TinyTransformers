@@ -77,14 +77,14 @@ What I want:
 - DDP training with 1 and 2 GPUs, with model checkpoints, tested with simple NN first
 - Continue training from previous checkpoints, tested with simple NN first
 
-**2025/01/11**
+**2026/01/11**
 Invisible CPU zombie, after auto shutdown enabled, consume all the resources.
 Use a small subset of validation set for validation, saving time! ( validation with a small subset is statistically sufficient for tracking loss trends / early stopping / model improvement.)
 
-**2025/01/12**
+**2026/01/12**
 Checkpoints consume too much memory space causes a crash in training. 
 
-**2025/01/13**
+**2026/01/13**
 Epoch 1 finished training, best valid loss = 3.91.
 
 ## Blogs:
