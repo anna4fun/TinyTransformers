@@ -1,10 +1,12 @@
 # Build a Tiny Transformers (GPT2)
 This repository contains my code and notes for implementing a tiny decoder only transformers(124M GPT2).
-Training data is the FineWeb-Edu 10B tokens dataset, I used the tokenized version on [Kaggle](https://www.kaggle.com/datasets/minhthiennguyen/fineweb-edu-10bt-for-gpt2/data).
 
 Following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s)
-and [Let's reproduce GPT2]. 
-This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture)
+and [Let's reproduce GPT2](https://www.youtube.com/watch?v=l8pRSuU81PU&list=PPSV). 
+This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture).
+
+Training data is the FineWeb-Edu 10B tokens dataset, I used the tokenized version on [Kaggle](https://www.kaggle.com/datasets/minhthiennguyen/fineweb-edu-10bt-for-gpt2/data).
+The first epoch is trained with **1 Nvidia 4090D** GPU, total run time is 23 hours.
 
 
 ## High Level Architecture of GPT2 Model and Training
@@ -76,8 +78,14 @@ What I want:
 - Continue training from previous checkpoints, tested with simple NN first
 
 **2025/01/11**
-Invisible CPU zoombi, after auto shutdown enabled, consume all the resources.
+Invisible CPU zombie, after auto shutdown enabled, consume all the resources.
 Use a small subset of validation set for validation, saving time! ( validation with a small subset is statistically sufficient for tracking loss trends / early stopping / model improvement.)
+
+**2025/01/12**
+Checkpoints consume too much memory space causes a crash in training. 
+
+**2025/01/13**
+Epoch 1 finished training, best valid loss = 3.91.
 
 ## Blogs:
 ### Attention is All You Need readout
@@ -91,11 +99,15 @@ Use a small subset of validation set for validation, saving time! ( validation w
 
 
 ### Evaluation during training
-![swanlab_dashboard_overfit_one_batch.png](pictures/swanlab_dashboard_overfit_one_batch.png)
 1. What are the metrics to evaluate how good the trained GPT is?
-2. How to observe these metrics?
-3. Can I visualize or test the intermediate output of the GPT?
+- Train loss and validation loss
+- HellaSwag
+
+I use Swanlab to monitor 
+![gpt2-FineWeb-prod-12k-19k-finish-epoch1.png](pictures/gpt2-FineWeb-prod-12k-19k-finish-epoch1.png)
+
+
 
 ### More
 1. Now that I know how to write the core code of GPT2, how to use different models on HuggingFace? Start with the GPT family (GP2, GPT3, GPT-oss)
-2. 
+2. How to make training even faster?

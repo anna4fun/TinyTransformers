@@ -122,10 +122,10 @@ def train_gpt2():
 
     # Initialize training progress variables (defaults for scratch training)
     start_step = 0
-    max_steps = 12001  # TODO: change steps with max_step in PROD # 2k - 11k should take 11 hrs
+    max_steps = 19073  # TODO: change steps with max_step in PROD # 2k - 11k should take 11 hrs
 
     # Resume from checkpoints or start fresh
-    checkpoint_name = "ckpt_gpt2_epoch_1_7500.pt" # todo: change to desired ckpt
+    checkpoint_name = "ckpt_gpt2_epoch_1_12000.pt" # todo: change to desired ckpt
     checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
     if config.resume_checkpoint and os.path.exists(checkpoint_path):
         # Load the checkpoint
