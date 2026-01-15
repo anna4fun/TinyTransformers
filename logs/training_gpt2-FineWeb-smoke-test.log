@@ -1,3 +1,238 @@
 2026-01-10 21:06:17 | GPU 0 | INFO | I am GPU 0
 2026-01-10 21:06:24 | GPU 0 | INFO | total desired batch size: 524288
 2026-01-10 21:06:24 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
+2026-01-10 21:14:53 | GPU 0 | INFO | I am GPU 0
+2026-01-10 21:15:01 | GPU 0 | INFO | total desired batch size: 524288
+2026-01-10 21:15:01 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
+2026-01-11 09:35:12 | GPU 0 | INFO | GPU 0 initialized | Device: cuda | World Size: 1 | Is master process: True
+2026-01-11 09:35:22 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 09:35:22 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 2
+2026-01-11 09:35:22 | GPU 0 | INFO | total desired batch size: 524288
+2026-01-11 09:35:22 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
+2026-01-11 15:02:46 | GPU 0 | INFO | GPU 0 initialized | Device: cuda | World Size: 1 | Is master process: True
+2026-01-11 15:02:54 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:02:54 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 2
+2026-01-11 15:02:54 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:02:54 | GPU 0 | INFO | => Calculated gradient accumulation steps: 2
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: FAILED TO GET (ALMOST CERTAIN OOM CRASH) | Error: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       2.0Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | CRITICAL | 
+====================================================================================================
+TRAINING CRASH DETECTED | TIME: 2026-01-11 15:05:51
+SIGNAL RECEIVED: SIGINT (Keyboard Interrupt - Ctrl+C pressed)
+DEVICE: cuda
+DDP RANK: 0
+GPU MEMORY: 11.05 GB / 23.52 GB | OOM RISK: Low
+💻 CPU RAM: Mem:           1.0Ti        65Gi       265Gi       1.9Gi       676Gi       934Gi
+
+FULL CRASH STACK TRACE:
+NoneType: None
+
+====================================================================================================
+
+2026-01-11 15:05:51 | GPU 0 | INFO | GPU 0: Start clean up
+2026-01-11 15:05:51 | GPU 0 | INFO | GPU 0: clean up finishes
+2026-01-11 15:13:07 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:13:11 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:13:11 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 2
+2026-01-11 15:13:11 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:13:11 | GPU 0 | INFO | => Calculated gradient accumulation steps: 2
+2026-01-11 15:22:23 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:22:28 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:22:28 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 2
+2026-01-11 15:22:28 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:22:28 | GPU 0 | INFO | => Calculated gradient accumulation steps: 2
+2026-01-11 15:23:46 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:23:51 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:23:51 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 2
+2026-01-11 15:23:51 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:23:51 | GPU 0 | INFO | => Calculated gradient accumulation steps: 2
+2026-01-11 15:24:02 | GPU 0 | INFO | Training finished! Total time: 10.61s
+2026-01-11 15:29:10 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:29:13 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:29:13 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32.0
+2026-01-11 15:29:13 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:29:13 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32.0
+2026-01-11 15:32:31 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:32:36 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:32:36 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 15:32:36 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:32:36 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 15:32:52 | GPU 0 | INFO | Training finished! Total time: 16.30s
+2026-01-11 15:52:57 | GPU 0 | INFO | I am GPU 0
+2026-01-11 15:53:01 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 15:53:01 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 15:53:01 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 15:53:01 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 15:53:17 | GPU 0 | INFO | Training finished! Total time: 16.14s
+2026-01-11 16:12:32 | GPU 0 | INFO | I am GPU 0
+2026-01-11 16:12:37 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 16:12:37 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 16:12:37 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 16:12:37 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 16:16:29 | GPU 0 | INFO | I am GPU 0
+2026-01-11 16:16:33 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 16:16:33 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 16:16:33 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 16:16:33 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 16:29:38 | GPU 0 | INFO | I am GPU 0
+2026-01-11 16:29:42 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 16:29:42 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 16:29:42 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 16:29:42 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 16:42:54 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 16:42:54 | GPU 0 | INFO | I am GPU 0
+2026-01-11 16:42:58 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 16:42:58 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 16:42:58 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 16:42:58 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 16:44:36 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 16:44:36 | GPU 0 | INFO | I am GPU 0
+2026-01-11 16:44:40 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 16:44:40 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 16:44:40 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 16:44:40 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 16:45:05 | GPU 0 | INFO | Training finished! Total time: 25.17s
+2026-01-11 17:10:55 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:10:55 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:11:00 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 17:11:00 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 17:11:00 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 17:11:00 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 17:11:04 | GPU 0 | INFO | Starting training from 0 steps
+2026-01-11 17:11:44 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:11:44 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:13:52 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:13:52 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:17:36 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:17:36 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:17:40 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 17:17:40 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 17:17:40 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 17:17:40 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 17:17:44 | GPU 0 | INFO | Starting training from 0 steps
+2026-01-11 17:25:31 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:25:31 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:25:36 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 17:25:36 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 17:25:36 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 17:25:36 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 17:25:40 | GPU 0 | INFO | Starting training from 0 steps
+2026-01-11 17:28:06 | GPU 0 | INFO | Master Process 0 initialized SwanLab successfully
+2026-01-11 17:28:06 | GPU 0 | INFO | I am GPU 0
+2026-01-11 17:28:11 | GPU 0 | INFO | Model compiled with torch.compile()
+2026-01-11 17:28:11 | GPU 0 | INFO | ✅ Total batch size: 524288 | Gradient Accum Steps: 32
+2026-01-11 17:28:11 | GPU 0 | INFO | Total desired batch size: 524288
+2026-01-11 17:28:11 | GPU 0 | INFO | => Calculated gradient accumulation steps: 32
+2026-01-11 17:28:15 | GPU 0 | INFO | Starting training from 0 steps
+2026-01-11 17:28:35 | GPU 0 | INFO | Training finished! Total time: 24.39s
