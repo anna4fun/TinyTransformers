@@ -1,36 +1,13 @@
-2026-01-08 17:00:09 | GPU 0 | INFO | I am GPU 0
-2026-01-08 17:00:15 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-08 17:00:15 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-08 17:04:56 | GPU 0 | INFO | I am GPU 0
-2026-01-08 17:05:03 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-08 17:05:03 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 15:44:39 | GPU 0 | INFO | I am GPU 0
-2026-01-09 15:44:45 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 15:44:45 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 15:46:26 | GPU 0 | INFO | I am GPU 0
-2026-01-09 15:46:32 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 15:46:32 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 15:46:38 | GPU 0 | INFO | Training finished! Total time: 5.63s
-2026-01-09 17:01:13 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:01:20 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:01:20 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:03:15 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:03:20 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:03:20 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:03:27 | GPU 0 | INFO | Training finished! Total time: 7.00s
-2026-01-09 17:06:48 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:06:53 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:06:53 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:07:02 | GPU 0 | INFO | Training finished! Total time: 8.68s
-2026-01-09 17:08:56 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:09:02 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:09:02 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:09:12 | GPU 0 | INFO | Training finished! Total time: 10.03s
-2026-01-09 17:36:39 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:36:44 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:36:44 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:36:52 | GPU 0 | INFO | Training finished! Total time: 7.45s
-2026-01-09 17:38:08 | GPU 0 | INFO | I am GPU 0
-2026-01-09 17:38:14 | GPU 0 | INFO | total desired batch size: 524288
-2026-01-09 17:38:14 | GPU 0 | INFO | => calculated gradient accumulation steps: 2
-2026-01-09 17:38:22 | GPU 0 | INFO | Training finished! Total time: 7.38s
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP device mps
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP rank 0
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP local rank 0
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP world size 1
+2026-01-04 10:46:01 | GPU 0 | INFO | DDP master process True
+2026-01-04 16:31:11 | GPU 0 | INFO | DDP device mps
+2026-01-04 16:31:11 | GPU 0 | INFO | DDP rank 0
+2026-01-04 16:31:11 | GPU 0 | INFO | DDP local rank 0
+2026-01-04 16:31:11 | GPU 0 | INFO | DDP world size 1
+2026-01-04 16:31:11 | GPU 0 | INFO | DDP master process True
+2026-01-05 14:33:51 | GPU 0 | INFO | I am GPU 0
+2026-01-05 14:33:56 | GPU 0 | INFO | total desired batch size: 524288
+2026-01-05 14:33:56 | GPU 0 | INFO | => calculated gradient accumulation steps: 2

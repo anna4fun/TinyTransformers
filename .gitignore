@@ -4,5 +4,5 @@
 .idea/*
 autodl_command
 *.npy
-/checkpoints
+/checkpoints/*
 /logs
