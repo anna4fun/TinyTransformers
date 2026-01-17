@@ -164,9 +164,9 @@ class ResumableShardedLMSequenceDataset(Dataset):
         self.cfg = cfg
         self.split = split  # "train" or "test" (uses pre-split folders)
         self.block_size = cfg.block_size
-        # Step 1: List all shard paths (sorted) from pre-split folder
+        # List all shard paths (sorted) from pre-split folder
         self.shard_paths = self._get_sorted_shard_paths()
-        # Optional: Pre-load a small buffer (avoids reloading files too often)
+        # Pre-load a small buffer (avoids reloading files too often)
         self.current_file_idx = 0
         self.current_tokens = self._load_file(self.current_file_idx)
         self.current_pos = 0
@@ -186,7 +186,7 @@ class ResumableShardedLMSequenceDataset(Dataset):
         try:
             # Load tokens (returns 1D numpy array of integers)
             tokens = np.load(file_path).astype(np.int64)
-            return tokens
+            return torch.from_numpy(tokens)
         except Exception as e:
             print(f"Warning: Failed to load {file_path} – stopped. Error: {e}")
 
@@ -204,11 +204,10 @@ class ResumableShardedLMSequenceDataset(Dataset):
         # Ensure all batches contains enough tokens
         while len(self.current_tokens) - self.current_pos < target_length:
             # keep all the tokens of the current shard
-            remaining_tokens = self.current_tokens[self.current_pos:]
-            # load tokens from next shard
-            self.current_file_idx = (self.current_file_idx + 1) % len(self.shard_paths)
+            remaining_tokens = self.current_tokens[self.current_pos:] # Creates a VIEW
+            # load tokens from next shard; the len(self.shard_paths) enables: if the current shard is the last shard, load tokens from the first shard
+            self.current_file_idx = (self.current_file_idx + 1) % len(self.shard_paths) # Creates NEW tensor
             new_tokens = self._load_file(self.current_file_idx)
-            # stitch old and new shard's tokens together
             self.current_tokens = torch.cat([remaining_tokens, new_tokens], dim=0)
             self.current_pos = 0
 
@@ -233,7 +232,8 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
     val_split_ratio = getattr(cfg, "val_split", 0.1)  # 10% val by default (add to your GPT2DataConfig)
     val_size = int(len(full_train_dataset) * val_split_ratio)
     train_size = len(full_train_dataset) - val_size
-    train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
+    # Use the generator to ensure reproducibility, generator is needed in train_valid_split
+    train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size], generator=g)
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
     train_dl = DataLoader(train_dataset,
                           batch_size=cfg.batch_size,

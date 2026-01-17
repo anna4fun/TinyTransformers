@@ -56,15 +56,16 @@ def train_gpt2():
     ddp_initialized = ddp and dist.is_initialized()
     if device.startswith("cuda"):
         device_type = "cuda"
-    # todo: remember to update epoch
-    epoch = 1
+    # todo: remember to update epoch and experiment_name
+    epoch = 2
+    experiment_name = "gpt2-FineWeb-epoch_2_first_500shards"
 
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
-                            num_workers=16*2, ddp=ddp_initialized, resume_checkpoint=True)
+                            num_workers=8, ddp=ddp_initialized, resume_checkpoint=True)
     config_dict = dataclasses.asdict(config)
-    logger = setup_logger(cfg = config, train_name = "gpt2-FineWeb-val100samples", local_rank = ddp_local_rank)
+    logger = setup_logger(cfg = config, train_name = experiment_name, local_rank = ddp_local_rank)
 
     # Complete deterministic
     # All ranks (GPUs) must use the same seed to avoid non-determinism in DDP
@@ -72,8 +73,9 @@ def train_gpt2():
     torch.cuda.manual_seed_all(config.seed)
     # Disable non-deterministic CUDA ops (critical for GPU)
     # --------------------------
-    torch.backends.cudnn.benchmark = False  # Disable speed optimizations for determinism
-    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True  # False: Disable speed optimizations for determinism -> True: Enable speed optimizations
+    torch.backends.cudnn.deterministic = False # False: Allow non-deterministic ops 
+    # Impact: 2-3x faster training. Only enable determinism when needed for reproducibility.
 
     # --------------------------
     # Step 3: Seed DataLoader and Swanlab
@@ -90,7 +92,7 @@ def train_gpt2():
     if master_process:
         swanlab_run = swanlab.init(
             project="gpt2-training",  # Your project name
-            experiment_name="gpt2-FineWeb-prod-2-11k",
+            experiment_name=experiment_name,
             config=config_dict,  # Log hyperparameters
             mode="local",  # Use local mode (no cloud sync)
             description = "GPT-2 124M training on FineWeb-edu dataset",
@@ -122,10 +124,10 @@ def train_gpt2():
 
     # Initialize training progress variables (defaults for scratch training)
     start_step = 0
-    max_steps = 19073  # TODO: change steps with max_step in PROD # 2k - 11k should take 11 hrs
+    max_steps = 500  # TODO: change steps with max_step in PROD 
 
     # Resume from checkpoints or start fresh
-    checkpoint_name = "ckpt_gpt2_epoch_1_12000.pt" # todo: change to desired ckpt
+    checkpoint_name = f"ckpt_gpt2_epoch_1_19072.pt" 
     checkpoint_path = os.path.join(config.checkpoint_dir, checkpoint_name)
     if config.resume_checkpoint and os.path.exists(checkpoint_path):
         # Load the checkpoint
@@ -137,7 +139,16 @@ def train_gpt2():
 
         # Restore training progress
         start_epoch = checkpoint["epoch"]
-        start_step = checkpoint["global_step"] + 1 # iterate to the next dataloder batch
+        if start_epoch == epoch:
+            logger.info(f"Resuming training from checkpoint {checkpoint_path} from current epoch {start_epoch}")
+            start_step = checkpoint["global_step"] + 1 # iterate to the next dataloder batch
+        elif start_epoch == epoch - 1:
+            logger.info(f"Start from a new epoch {epoch} based on the previous checkpoint {checkpoint_path}")
+            start_step = start_step 
+            start_epoch = epoch
+        else:
+            logger.error(f"Invalid checkpoint epoch {start_epoch}, expected {epoch} or {epoch - 1}, current checkpoint is {checkpoint_path}")
+            sys.exit(0)
         last_loss = checkpoint["loss"]
         logger.info(f"Resumed training from epoch {start_epoch}, global step {start_step}, last loss: {last_loss:.4f}")
     elif config.resume_checkpoint and not os.path.exists(checkpoint_path):
@@ -228,9 +239,9 @@ def train_gpt2():
         optimizer.step()
 
         # The synchronize function blocks the CPU thread until all pending MPS operations finish executing on the GPU
-        if device =="cuda":
+        if device =="cuda" and i % log_every == 0:
             torch.cuda.synchronize(device)
-        elif device == "mps":
+        elif device == "mps" and i % log_every == 0:
             torch.mps.synchronize()
             # CPU requires no synchronization (operations are synchronous by default)
 
@@ -253,7 +264,6 @@ def train_gpt2():
         if (i % log_every == 0 or i == 0 or i == max_steps-1) and master_process:
             # SWITCH TO SPEED MODE FOR EVAL: enable benchmark + disable strict determinism
             t3 = time.time()
-            torch.backends.cudnn.benchmark = True
             eval_loss = evaluate(model, valid_dl, device, max_val_batches=100)
 
             # Update the best validation loss
@@ -266,9 +276,6 @@ def train_gpt2():
                 "Loss/best_valid_loss": best_valid_loss,
                 "Time/eval_time": eval_time,
             }, step=i)
-            # SWITCH BACK TO DETERMINISTIC MODE FOR TRAINING (critical!)
-            torch.backends.cudnn.benchmark = False
-            torch.backends.cudnn.deterministic = True
 
         # Learning Rate scheduler update (happens after optimizer step)
         scheduler.step()
