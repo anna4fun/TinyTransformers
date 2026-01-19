@@ -1,3 +1,4 @@
+![tinytransformercover](pictures/Cover.png)
 # Build a Tiny Transformers (GPT2)
 This repository contains my code and notes for implementing a tiny decoder only transformers(124M GPT2).
 
