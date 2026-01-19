@@ -6,3 +6,9 @@ autodl_command
 *.npy
 /checkpoints/*
 /logs
+.vscode/*
+.pytest_cache/*
+.DS_Store
+.idea/*
+.pytest_cache/*
+.pytest_cache/*
