@@ -12,3 +12,4 @@ autodl_command
 .idea/*
 .pytest_cache/*
 .pytest_cache/*
+notes/hide* 

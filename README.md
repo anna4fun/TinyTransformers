@@ -12,27 +12,48 @@ The first epoch is trained with **1 Nvidia 4090D** GPU, total run time is 23 hou
 
 ## High Level Architecture of GPT2 Model and Training
 1. The GPT2 Language Model
-   2. Byte-pair encoding tokenization
+
+   1. Byte-pair encoding tokenization
    3. Build contextual embedding with the attention mechanism
    3. The transformer block data flow: idx -> token+positional embedding -> 12 layers of Block (Attention + MLP + LayerNorm)  -> Final layer norm -> projection back to vocabulary space -> softmax for next token prediction
-4. The Training
-   5. Prepare data loader
+
+2. The Training
+
+   1. Prepare data loader
+      - TODO: how to evaluate the training set's diversity?
    6. Initialize the GPT2 model parameters with down-scaled standard deviation. (#stability)
-      7. (GPT2 only) (#efficiency) token embedding share the same weights with the final projection head's weights, this aligns the distribution of inputs and outputs
+      - (GPT2 only) (#efficiency) token embedding share the same weights with the final projection head's weights, this aligns the distribution of inputs and outputs
    7. (Forward) Feed sequences of data into GPT2 language model to get the logits
-   7. (Backward) Use cross-entropy loss (negative averaged log-likelihood) for gradient descent 
-8. The Efficiency Tricks
-   9. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
+   7. (Backward) Use cross-entropy loss (negative averaged log-likelihood) for gradient descent
+   7. Goals of each epoch:
+      1. epoch 1: learn the token statistics, the token embeddings should be well formed
+      2. epoch 2: phrase structure, should be able to complete common text generation tasks
+      3. epoch 3: marginal gain on, should be solving more less frequent text generation tasks
+
+3. The Efficiency Tricks
+
+   1. Limit data transportation between chips and memory by memory hierarchy -> Kernel fusion such as `torch.compile()` and FlashAttention
    10. Cut precision when possible -> Mixed Precision of float32 and float16 
    11. Set all hyperparameters to be powers of 2, because this is CUDA works with chunks of 32 and 64, so making our parameters in the same way is a better utilization of GPU resources.
-8. The Optimization Techniques (from GPT3 paper)
-   9. AdamW: adding momentum(2nd, 3rd derivatives) to gradient(1st derivative) descent, to make SGD go faster. (confirm: AdamW is not changing learning rate, but to change the gradients itself.)
-   10. Gradient Clipping: adding a normalization to the gradient vector. Rational: bad batch of data in the training could cause the loss to be very high, making the gradients to be very big too, causing a "shock" to the model.
-9. The Model's Output
-   9. The model output is a prediction(aka, generation) of next token given a sentence.
+
+4. The Optimization Techniques (from GPT3 paper)
+
+   1. AdamW: adding momentum(2nd, 3rd derivatives) to gradient(1st derivative) descent, to make SGD go faster. (confirm: AdamW is not changing learning rate, but to change the gradients itself.)
+   2. Gradient Clipping: adding a normalization to the gradient vector. Rational: bad batch of data in the training could cause the loss to be very high, making the gradients to be very big too, causing a "shock" to the model.
+
+5. The Model's Output
+
+   1. The model output is a prediction(aka, generation) of next token given a sentence.
    10. The output probability per token distribution contains the latent information of what's including and before the current token, it's a conditional probability distribution over all past tokens within the context window.
-9. How to Evaluate the Model
-9. Deployment
+         - Question: Since it's a probability distribution, would the rate-event tokens hard to be pulled out from this model?
+
+6. How to Evaluate the Model
+
+   1. Golden set
+   2. Human-in-the-loop
+
+
+7. Deployment (TBD)
 
 ## Daily training observations
 **2025/12/03**
@@ -89,26 +110,36 @@ Checkpoints consume too much memory space causes a crash in training.
 Epoch 1 finished training, best valid loss = 3.91.
 
 ## Blogs:
-### Attention is All You Need readout
+
 1. [Done] Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)
 5. [Done] where is the K, Q, V weights training happens? [link to notes](notes/Is_training_of_QKV_happens_with_training_embedding.md)
 6. Can I interpret the meaning blobs inside K, Q, V? like CNN
+3. What's inside FineWeb-Edu dataset?
+4. How to make training even faster? (TBD)[Link to notes](notes/Improvements_to_epoch_1_training.md)
+4. Model evaluation end of epoch 1 (TBD)
 4. What are the different variations of transformers, eg. for large models and small models
-2. what is residual path
-4. Why is a blog marked fig.2 of the attention paper to be:encode as BERT and decode as GPT. 
-   Short Answer: The Attention is All You Need paper Figure 2 contains an encoder and decoder connected by a cross-attention sharing of Q and K. However, none of the BERT and GPT models implemented this encoder+decoder architecture: BERT is an Encoder that is trained to look both directions of the sequence and make any position prediction, while GPT is a Decoder because it's products ChatGPT is a human chat format which naturally goes left to right sequence understanding and generation.
+2. What is residual path
+
 
 
 ### Evaluation during training
-1. What are the metrics to evaluate how good the trained GPT is?
-- Train loss and validation loss
+
+#### 1. What are the metrics to evaluate how good the trained GPT is?
+
+- Train loss and validation loss: train loss needs to go down
+![gpt2-FineWeb-prod-12k-19k-finish-epoch1.png](pictures/gpt2-FineWeb-prod-12k-19k-finish-epoch1.png)
+
 - HellaSwag
 
-I use Swanlab to monitor 
-![gpt2-FineWeb-prod-12k-19k-finish-epoch1.png](pictures/gpt2-FineWeb-prod-12k-19k-finish-epoch1.png)
+2. How to estimate the biases in the model?
+
+
+
+
+
 
 
 
 ### More
 1. Now that I know how to write the core code of GPT2, how to use different models on HuggingFace? Start with the GPT family (GP2, GPT3, GPT-oss)
-2. How to make training even faster?
+2. 
