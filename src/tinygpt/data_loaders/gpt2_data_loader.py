@@ -11,7 +11,6 @@ import torch
 from datasets import tqdm, load_from_disk, load_dataset
 from torch import Generator
 from torch.utils.data import Dataset, DataLoader, DistributedSampler, random_split
-import torch.distributed as dist
 from tinygpt.configs.config import GPT2DataConfig
 import tiktoken
 import logging
@@ -222,11 +221,6 @@ class ResumableShardedLMSequenceDataset(Dataset):
 
 def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoader]:
     """Build DDP-compatible DataLoaders with resumable training"""
-    # Initialize DDP (call this once at the start of training)
-    if cfg.ddp and not dist.is_initialized():
-        dist.init_process_group(backend="nccl")  # NCCL for GPU DDP
-
-    # TODO: create validation set
     # Create train/test datasets (pre-split folders)
     full_train_dataset = ResumableShardedLMSequenceDataset(cfg, split="train")
     val_split_ratio = getattr(cfg, "val_split", 0.1)  # 10% val by default (add to your GPT2DataConfig)
@@ -235,9 +229,19 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
     # Use the generator to ensure reproducibility, generator is needed in train_valid_split
     train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size], generator=g)
     test_dataset = ResumableShardedLMSequenceDataset(cfg, split="test")
+    train_sampler = None
+    if cfg.ddp:
+        train_sampler = DistributedSampler(
+            train_dataset,
+            num_replicas=cfg.world_size,
+            rank=cfg.rank,
+            shuffle=cfg.shuffle,
+            seed=cfg.seed,
+        )
+
     train_dl = DataLoader(train_dataset,
                           batch_size=cfg.batch_size,
-                          # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+                          sampler=train_sampler,  # Overrides shuffle (use sampler for DDP)
                           num_workers=cfg.num_workers,
                           pin_memory=True,
                           drop_last=False,
@@ -247,7 +251,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           )
     val_dl = DataLoader(val_dataset,
                           batch_size=cfg.batch_size,
-                          # sampler=sampler,  # Overrides shuffle (use sampler for DDP)
+                          # sampler=sampler,  # no need sampler bc validation doesn't drive gradients
                           num_workers=cfg.num_workers,
                           pin_memory=True,
                           drop_last=False, # Dropping samples leads to a biased validation score
@@ -265,28 +269,5 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           generator=g,
                           shuffle=False
                          )
-    # DDP
-    # train_dl = build_dl(train_dataset, "train")
-    # test_dl = build_dl(test_dataset, "test")
-    return dict(train_dl=train_dl, test_dl=test_dl, val_dl=val_dl)
 
-# -------------------------- DDP DataLoader Builder --------------------------
-# DDP: Use DistributedSampler (critical for batch splitting across GPUs)
-# def build_dl(dataset: ResumableShardedLMSequenceDataset, split: str) -> DataLoader:
-#     sampler = DistributedSampler(
-#         dataset,
-#         num_replicas=cfg.world_size,
-#         rank=cfg.rank,
-#         shuffle=cfg.shuffle,
-#         seed=cfg.seed
-#     ) if cfg.ddp else None
-#
-#     return DataLoader(
-#         dataset,
-#         batch_size=cfg.batch_size,
-#         sampler=sampler,  # Overrides shuffle (use sampler for DDP)
-#         num_workers=cfg.num_workers,
-#         pin_memory=True,
-#         drop_last=False,
-#         persistent_workers=True if cfg.num_workers > 0 else False
-#     )
+    return dict(train_dl=train_dl, test_dl=test_dl, val_dl=val_dl, train_sampler=train_sampler)
