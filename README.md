@@ -2,13 +2,16 @@
 # Build a Tiny Transformers (GPT2)
 This repository contains my code and notes for implementing a tiny decoder only transformers(124M GPT2).
 
-Following Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s)
-and [Let's reproduce GPT2](https://www.youtube.com/watch?v=l8pRSuU81PU&list=PPSV). 
-This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture).
-
 Training data is the FineWeb-Edu 10B tokens dataset, I used the tokenized version on [Kaggle](https://www.kaggle.com/datasets/minhthiennguyen/fineweb-edu-10bt-for-gpt2/data).
 The first epoch is trained with **1 Nvidia 4090D** GPU, total run time is 23 hours.
 
+Evaluation coming soon.
+
+## Quick Start
+```
+pip install -r requirements.txt
+python train/train_gpt2.py
+```
 
 ## High Level Architecture of GPT2 Model and Training
 1. The GPT2 Language Model
@@ -142,4 +145,9 @@ Epoch 1 finished training, best valid loss = 3.91.
 
 ### More
 1. Now that I know how to write the core code of GPT2, how to use different models on HuggingFace? Start with the GPT family (GP2, GPT3, GPT-oss)
-2. 
+
+
+## Special thanks 
+I followed Andrej Karpathy's YouTube video [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY&t=6576s)
+and [Let's reproduce GPT2](https://www.youtube.com/watch?v=l8pRSuU81PU&list=PPSV). 
+This repo was forked from the lecture's [repo](https://github.com/karpathy/ng-video-lecture).
