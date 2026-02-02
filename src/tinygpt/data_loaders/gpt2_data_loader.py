@@ -267,7 +267,7 @@ def make_ddp_dataloader(cfg: GPT2DataConfig, g: Generator) -> Dict[str, DataLoad
                           drop_last=False,
                           persistent_workers=True if cfg.num_workers > 0 else False,
                           generator=g,
-                          shuffle=False
+                          shuffle=True
                          )
 
     return dict(train_dl=train_dl, test_dl=test_dl, val_dl=val_dl, train_sampler=train_sampler)

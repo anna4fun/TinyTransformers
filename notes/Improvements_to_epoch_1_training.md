@@ -17,7 +17,7 @@
 
     Note: the train/val split currently don't use the generator. add it.
     
-    Note: `torch.backends.cudnn.benchmark` is designed to run a short benchmark to pick the fastest convolution algorithm for the given input shape. When `True`, benchmarks once per input shape then reuse the same fastest algorithm. Since GPT-2 doesn't have a convolution layer so this flag is not used, what GPT-2 and other transformers do use for matrix multiplication is cuBLAS and cuBLASLt
+    Note: `torch.backends.cudnn.benchmark` is designed to run a short benchmark to pick the fastest convolution algorithm for the given input shape. When `True`, benchmarks once per input shape then reuse the same fastest algorithm. Since GPT-2 doesn't have a convolution layer so this flag is not used, what GPT-2 and other transformers do use for matrix multiplication is cuBLAS and cuBLASLt.
 
     Conclusion: delete them all.
 

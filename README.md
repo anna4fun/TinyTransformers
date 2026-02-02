@@ -112,6 +112,10 @@ Checkpoints consume too much memory space causes a crash in training.
 **2026/01/13**
 Epoch 1 finished training, best valid loss = 3.91.
 
+**2026/02/01**
+Tested on 6k random sample of batches from the FineWeb-Edu test set (625k total batches), test loss stablized around 4.03, test perplexity 55.30.
+
+
 ## Blogs:
 
 1. [Done] Self attention: is the aggregation aim for predicting the last token? [link to blog](notes/self_attention_what_exactly_is_the_QKV_aggregation_doing.md)

@@ -1,4 +1,5 @@
 import code
+from contextlib import nullcontext
 import dataclasses
 import time
 
@@ -17,32 +18,12 @@ from tinygpt.logger.setup_logger import setup_logger
 from tinygpt.models.gpt2 import GPT2
 from tinygpt.data_loaders.gpt2_data_loader import make_dataloader, make_ddp_dataloader
 from tinygpt.configs.config import ExperimentConfig, GPT2DataConfig
+from tinygpt.evaluation_utils.eval_loss import loss_evaluate
 
 from torch.distributed import init_process_group, destroy_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 
-@torch.no_grad()
-def evaluate(model: GPT2, valid_loader: DataLoader, device, max_val_batches=100):
-    # Total of 1000,000 seq in val_dl, pick 100 for validation every time, validate for 40 times
-    model.eval()
-    total_loss, total_samples = 0.0, 0
-    valid_iter = iter(valid_loader)  # use a persistent iterator
-    with torch.autocast(device_type=device, dtype=torch.float16):
-        # No loss of loss metric accuracy (avg NLL is stable in FP16) + ~2x faster inference vs FP32.
-        for i in range(max_val_batches):
-            try:
-                x, y = next(valid_iter)
-            except StopIteration:
-                break  # exit loop early if no more batches
-            x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)  # extra speed
-            _, loss = model(x,y) # this loss is the average negative log-likelihood(per sample in the batch)
-            batch_size = x.size(0)
-            total_loss += batch_size * loss.item()
-            total_samples += batch_size
-        val_loss = total_loss / max(1, total_samples)
-        model.train()
-    return val_loss # in case of 0 sample
 
 def train_gpt2():
     # ----------------------
@@ -58,12 +39,13 @@ def train_gpt2():
         device_type = "cuda"
     # todo: remember to update epoch and experiment_name
     epoch = 2
-    experiment_name = "gpt2-FineWeb-epoch_2_first_500shards"
+    experiment_name = "gpt2-FineWeb-epoch_2_first_100shards"
 
     # 2. Setup Model parameters and initialized tracking with SwanLab
     # ----------------------
     config = GPT2DataConfig(vocab_size=50304, batch_size=16, learning_rate=6e-4, device=device,
-                            num_workers=8, ddp=ddp_initialized, resume_checkpoint=True)
+                            num_workers=8, ddp=ddp_initialized, resume_checkpoint=True, 
+                            world_size=ddp_world_size, rank=ddp_rank)
     config_dict = dataclasses.asdict(config)
     logger = setup_logger(cfg = config, train_name = experiment_name, local_rank = ddp_local_rank)
 
@@ -86,7 +68,7 @@ def train_gpt2():
     # TODO: modify dataloader for DDP: process_rank=ddp_rank, num_processes=ddp_world_size
     dl = make_ddp_dataloader(config, g=dl_generator)
     train_dl, valid_dl, test_dl = dl["train_dl"], dl["val_dl"], dl["test_dl"]
-
+    train_sampler = dl.get("train_sampler")
     # Initialize SwanLab only on master node
     swanlab_run = None
     if master_process:
@@ -190,7 +172,9 @@ def train_gpt2():
     start_time = time.time()  # Track total training time
     log_every = model.config.eval_interval
     train_iter = iter(train_dl) # use a persistent iterator
-    model.train() # todo: what does .train() do?
+
+    # Turn on train mode: enable stochastic behavior layers such as layer norm and dropout
+    model.train() 
     logger.info(f"Starting training from {start_step} steps to {max_steps} steps")
 
     # ----------------------
@@ -205,32 +189,37 @@ def train_gpt2():
         loss_accum = 0.0
 
         for micro_step in range(gradient_accumulation_steps):
+            sync_context = nullcontext()
+            if ddp_initialized and micro_step < gradient_accumulation_steps - 1:
+                sync_context = model.no_sync()
             # Load batch
             # x,y = next(iter(train_dl)) # Problem: You're using next(iter(train_dl)) inside the training loop, which re-initializes the DataLoader iterator every iteration. This is extremely inefficient and likely causing a CPU bottleneck that masks GPU speedups.
-            try:
-                x, y = next(train_iter)
-            except StopIteration:
-                train_iter = iter(train_dl)
-                x, y = next(train_iter)
-            x = x.to(device)
-            y = y.to(device)
+            
+            with sync_context:
+                try:
+                    x, y = next(train_iter)
+                except StopIteration:
+                    train_iter = iter(train_dl)
+                    x, y = next(train_iter)
+                x = x.to(device)
+                y = y.to(device)
 
-            # Forward
-            # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
-            with torch.autocast(device_type = device,dtype=torch.bfloat16):
-                logits, loss = model(x, y)
-                # Pause training to inspect state, e.g. the precision of logits should show float16, while wte.weights are float32
-                # code.interact(local=locals())
-            # Exit autocast before the backward path
+                # Forward
+                # Autocast to BF16 in the forward path (BF16 only available on Ampere architecture GPUs)
+                with torch.autocast(device_type = device,dtype=torch.bfloat16):
+                    logits, loss = model(x, y)
+                    # Pause training to inspect state, e.g. the precision of logits should show float16, while wte.weights are float32
+                    # code.interact(local=locals())
+                # Exit autocast before the backward path
 
-            # Backward
-            # TODO: if ddp, only synchronize the gradients when it is the last step of the gradient accumulated batch
-            # Normalize gradient_accumulation_steps before loss.backward()
-            loss = loss / gradient_accumulation_steps
-            # Get the raw gradients and deposit(sum) them into params.grad
-            loss.backward()
-            # track leave nodes
-            loss_accum += loss.detach().item()
+                # Backward
+                # TODO: if ddp, only synchronize the gradients when it is the last step of the gradient accumulated batch
+                # Normalize gradient_accumulation_steps before loss.backward()
+                loss = loss / gradient_accumulation_steps
+                # Get the raw gradients and deposit(sum) them into params.grad
+                loss.backward()
+                # track leave nodes
+                loss_accum += loss.detach().item()
 
         # Clip the global norm of the gradients at 1.0 (GPT3)
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -261,10 +250,10 @@ def train_gpt2():
             "Learning Rate": float(scheduler.get_last_lr()[0]),
         }, step=i)
 
+        # Monitoring validation loss
         if (i % log_every == 0 or i == 0 or i == max_steps-1) and master_process:
-            # SWITCH TO SPEED MODE FOR EVAL: enable benchmark + disable strict determinism
             t3 = time.time()
-            eval_loss = evaluate(model, valid_dl, device, max_val_batches=100)
+            eval_loss, _ = loss_evaluate(model, valid_dl, device, max_val_batches=100, perplexity_required=False)
 
             # Update the best validation loss
             if eval_loss < best_valid_loss:
@@ -276,6 +265,7 @@ def train_gpt2():
                 "Loss/best_valid_loss": best_valid_loss,
                 "Time/eval_time": eval_time,
             }, step=i)
+
 
         # Learning Rate scheduler update (happens after optimizer step)
         scheduler.step()
