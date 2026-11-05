@@ -113,7 +113,7 @@ Checkpoints consume too much memory space causes a crash in training.
 Epoch 1 finished training, best valid loss = 3.91.
 
 **2026/02/01**
-Tested on 6k random sample of batches from the FineWeb-Edu test set (625k total batches), test loss stablized around 4.03, test perplexity 55.30.
+Tested on 6k random sample of batches from the FineWeb-Edu test set (625k total batches), test loss stablized around 4.03, test perplexity 55.30. Meaning the model , on average, behaved like it thought ~55 tokens were equally plausible, it would have perplexity ~55.
 
 
 ## Blogs:

@@ -84,6 +84,8 @@ class CausalSelfAttention(nn.Module):
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
+        # layer norm: normalize per token, for each token normalize its feature space, aka embedding
+        # this way, the Attention block can compare the distance (not magnitude) between tokens.
         self.ln_1 = nn.LayerNorm(config.n_embd)
         self.attn = CausalSelfAttention(config)
         self.ln_2 = nn.LayerNorm(config.n_embd)
@@ -264,7 +266,7 @@ class GPT2(nn.Module):
                 logits[logits < v[:, [-1]]] = -float('Inf')
             # turn logits into probability distribution
             prob = F.softmax(logits, dim=-1)
-            # sample from the prob distribution
+            # sample from the prob distribution, draws a sample according to the probabilities in prob, high prob more likely to be drawed
             idx_next = torch.multinomial(prob, 1) # (B,1)
             idx = torch.cat((idx, idx_next), dim=1) # (B, L+1), dim=1 meaning the concatenation on the dim=1 dimension
         return idx
